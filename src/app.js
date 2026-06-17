@@ -714,15 +714,49 @@ function Cost(_ref9) {
     }, RESOURCES[key].name, " ", value);
   }));
 }
+function HelpPanel() {
+  var _useState = useState("rules"),
+    _useState2 = _slicedToArray(_useState, 2),
+    tab = _useState2[0],
+    setTab = _useState2[1];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "helpBox"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "helpTabs",
+    role: "tablist",
+    "aria-label": "\u30EB\u30FC\u30EB\u3068\u7528\u8A9E"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: tab === "rules" ? "selected" : "",
+    onClick: function onClick() {
+      return setTab("rules");
+    }
+  }, "\u30EB\u30FC\u30EB"), /*#__PURE__*/React.createElement("button", {
+    className: tab === "terms" ? "selected" : "",
+    onClick: function onClick() {
+      return setTab("terms");
+    }
+  }, "\u7528\u8A9E"), /*#__PURE__*/React.createElement("button", {
+    className: tab === "cards" ? "selected" : "",
+    onClick: function onClick() {
+      return setTab("cards");
+    }
+  }, "\u65B0\u5929\u5730")), tab === "rules" && /*#__PURE__*/React.createElement("div", {
+    className: "helpContent"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u904A\u3073\u65B9"), /*#__PURE__*/React.createElement("p", null, "\u30B5\u30A4\u30B3\u30ED\u3067\u8CC7\u6E90\u3092\u5F97\u3066\u3001\u60D1\u661F\u3001\u6052\u661F\u3001\u661F\u9593\u822A\u8DEF\u3092\u5E83\u3052\u307E\u3059\u300210 VP\u306B\u5230\u9054\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u52DD\u5229\u3067\u3059\u3002"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "\u521D\u671F\u914D\u7F6E\u3067\u306F\u5404\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u60D1\u661F\u3068\u661F\u9593\u822A\u8DEF\u30922\u30BB\u30C3\u30C8\u7F6E\u304D\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u81EA\u5206\u306E\u756A\u306F\u30B5\u30A4\u30B3\u30ED\u3001\u4EA4\u6613\u3001\u5EFA\u8A2D\u3001\u65B0\u5929\u5730\u306E\u9806\u306B\u9032\u3081\u3089\u308C\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u51FA\u76EE\u3068\u540C\u3058\u6570\u5B57\u306E\u30BF\u30A4\u30EB\u306B\u96A3\u63A5\u3059\u308B\u60D1\u661F\u306F\u8CC7\u6E901\u3001\u6052\u661F\u306F\u8CC7\u6E902\u3092\u5F97\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "7\u304C\u51FA\u305F\u3089\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u3001\u305D\u306E\u30BF\u30A4\u30EB\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8\u306B\u63A5\u3059\u308B\u60D1\u661F\u304B\u6052\u661F\u304C\u3042\u308B\u3068\u30012:1\u307E\u305F\u306F3:1\u4EA4\u6613\u304C\u4F7F\u3048\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("h2", null, "\u52DD\u5229\u70B9"), /*#__PURE__*/React.createElement("p", null, "\u60D1\u661F\u306F1 VP\u3001\u6052\u661F\u306F2 VP\u3001\u52DD\u5229\u8A18\u9332\u306F1 VP\u3067\u3059\u3002\u6700\u9577\u822A\u8DEF\u3068\u6700\u5927TV\u306F\u305D\u308C\u305E\u308C2 VP\u3067\u3059\u3002")), tab === "terms" && /*#__PURE__*/React.createElement("div", {
+    className: "helpContent"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u7528\u8A9E\u5BFE\u5FDC"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u60D1\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u958B\u62D3\u5730\u3002\u5EFA\u3066\u308B\u3068\u96A3\u63A5\u30BF\u30A4\u30EB\u304B\u3089\u8CC7\u6E90\u3092\u5F97\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u6052\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u90FD\u5E02\u3002\u60D1\u661F\u3092\u5F37\u5316\u3057\u3001\u7523\u51FA\u304C2\u500D\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u661F\u9593\u822A\u8DEF"), /*#__PURE__*/React.createElement("dd", null, "\u8857\u9053\u3002\u65B0\u3057\u3044\u60D1\u661F\u3092\u7F6E\u304F\u305F\u3081\u306E\u63A5\u7D9A\u8DEF\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8"), /*#__PURE__*/React.createElement("dd", null, "\u6E2F\u3002\u63A5\u3057\u3066\u3044\u308B\u3068\u901A\u4FE1\u4EA4\u6613\u304C\u6709\u5229\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u4E2D\u6027\u5B50\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u7802\u6F20\u3002\u8CC7\u6E90\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB"), /*#__PURE__*/React.createElement("dd", null, "\u76D7\u8CCA\u3002\u3044\u308B\u30BF\u30A4\u30EB\u306E\u7523\u51FA\u3092\u6B62\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TV"), /*#__PURE__*/React.createElement("dd", null, "\u9A0E\u58EB\u3002\u4F7F\u3046\u3068\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u52D5\u304B\u3057\u307E\u3059\u3002"))), /*#__PURE__*/React.createElement("h2", null, "\u8CC7\u6E90"), /*#__PURE__*/React.createElement("p", null, "\u5CA9\u77F3\u60D1\u661F=\u5CA9\u77F3\u3001\u9271\u77F3\u60D1\u661F=\u30EC\u30A2\u30E1\u30BF\u30EB\u3001\u8CC7\u6750\u5DE5\u5834=\u8CC7\u6750\u3001\u30CA\u30CE\u30DE\u30B7\u30F3\u5DE5\u5834=\u30CA\u30CE\u30DE\u30B7\u30F3\u3001\u6C34\u8015\u683D\u57F9=\u98DF\u6599\u3002")), tab === "cards" && /*#__PURE__*/React.createElement("div", {
+    className: "helpContent"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u65B0\u5929\u5730\u30AB\u30FC\u30C9"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TV"), /*#__PURE__*/React.createElement("dd", null, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u307E\u3059\u30023\u679A\u4EE5\u4E0A\u3067\u6700\u5927TV\u306E\u5019\u88DC\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u822A\u8DEF\u6574\u5099"), /*#__PURE__*/React.createElement("dd", null, "\u7121\u6599\u3067\u661F\u9593\u822A\u8DEF\u30922\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5FB4\u53CE"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u3092\u4ED6\u30D7\u30EC\u30A4\u30E4\u30FC\u5168\u54E1\u304B\u3089\u96C6\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u88DC\u7D66\u885B\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u30922\u3064\u53D7\u3051\u53D6\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u52DD\u5229\u8A18\u9332"), /*#__PURE__*/React.createElement("dd", null, "\u6301\u3063\u3066\u3044\u308B\u3060\u3051\u30671 VP\u3067\u3059\u3002")))));
+}
 function usePeerRoom(state, setState, roomId, myPlayerId) {
-  var _useState = useState({
+  var _useState3 = useState({
       mode: "local",
       status: "ローカル",
       share: ""
     }),
-    _useState2 = _slicedToArray(_useState, 2),
-    net = _useState2[0],
-    setNet = _useState2[1];
+    _useState4 = _slicedToArray(_useState3, 2),
+    net = _useState4[0],
+    setNet = _useState4[1];
   var peerRef = useRef(null);
   var connections = useRef([]);
   var stateRef = useRef(state);
@@ -1007,33 +1041,33 @@ function App() {
   var initialRoom = useMemo(function () {
     return new URLSearchParams(location.hash.replace("#", "")).get("room") || crypto.randomUUID().slice(0, 8);
   }, []);
-  var _useState3 = useState(function () {
+  var _useState5 = useState(function () {
       return createGame(initialRoom);
     }),
-    _useState4 = _slicedToArray(_useState3, 2),
-    state = _useState4[0],
-    setState = _useState4[1];
-  var _useState5 = useState(function () {
+    _useState6 = _slicedToArray(_useState5, 2),
+    state = _useState6[0],
+    setState = _useState6[1];
+  var _useState7 = useState(function () {
       return Number(new URLSearchParams(location.hash.replace("#", "")).get("p") || 0);
     }),
-    _useState6 = _slicedToArray(_useState5, 2),
-    myPlayerId = _useState6[0],
-    setMyPlayerId = _useState6[1];
-  var _useState7 = useState({
+    _useState8 = _slicedToArray(_useState7, 2),
+    myPlayerId = _useState8[0],
+    setMyPlayerId = _useState8[1];
+  var _useState9 = useState({
       give: "rock",
       take: "food"
     }),
-    _useState8 = _slicedToArray(_useState7, 2),
-    trade = _useState8[0],
-    setTrade = _useState8[1];
-  var _useState9 = useState({
+    _useState0 = _slicedToArray(_useState9, 2),
+    trade = _useState0[0],
+    setTrade = _useState0[1];
+  var _useState1 = useState({
       resource: "rock",
       a: "rock",
       b: "material"
     }),
-    _useState0 = _slicedToArray(_useState9, 2),
-    devChoice = _useState0[0],
-    setDevChoice = _useState0[1];
+    _useState10 = _slicedToArray(_useState1, 2),
+    devChoice = _useState10[0],
+    setDevChoice = _useState10[1];
   var _usePeerRoom = usePeerRoom(state, setState, state.id, myPlayerId),
     net = _usePeerRoom.net,
     host = _usePeerRoom.host,
@@ -1280,7 +1314,7 @@ function App() {
     }, DEV_NAMES[card]);
   }), !me.hiddenNewFrontiers.length && /*#__PURE__*/React.createElement("span", {
     className: "muted"
-  }, "\u306A\u3057"))))), /*#__PURE__*/React.createElement("section", {
+  }, "\u306A\u3057"))), /*#__PURE__*/React.createElement(HelpPanel, null))), /*#__PURE__*/React.createElement("section", {
     className: "players"
   }, state.players.map(function (player) {
     return /*#__PURE__*/React.createElement("article", {

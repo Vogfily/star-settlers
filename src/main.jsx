@@ -570,6 +570,71 @@ function Cost({ cost }) {
   );
 }
 
+function HelpPanel() {
+  const [tab, setTab] = useState("rules");
+  return (
+    <div className="helpBox">
+      <div className="helpTabs" role="tablist" aria-label="ルールと用語">
+        <button className={tab === "rules" ? "selected" : ""} onClick={() => setTab("rules")}>
+          ルール
+        </button>
+        <button className={tab === "terms" ? "selected" : ""} onClick={() => setTab("terms")}>
+          用語
+        </button>
+        <button className={tab === "cards" ? "selected" : ""} onClick={() => setTab("cards")}>
+          新天地
+        </button>
+      </div>
+
+      {tab === "rules" && (
+        <div className="helpContent">
+          <h2>遊び方</h2>
+          <p>サイコロで資源を得て、惑星、恒星、星間航路を広げます。10 VPに到達したプレイヤーが勝利です。</p>
+          <ul>
+            <li>初期配置では各プレイヤーが惑星と星間航路を2セット置きます。</li>
+            <li>自分の番はサイコロ、交易、建設、新天地の順に進められます。</li>
+            <li>出目と同じ数字のタイルに隣接する惑星は資源1、恒星は資源2を得ます。</li>
+            <li>7が出たらユニヴァース クリミナルを移動し、そのタイルは産出しません。</li>
+            <li>スペースポートに接する惑星か恒星があると、2:1または3:1交易が使えます。</li>
+          </ul>
+          <h2>勝利点</h2>
+          <p>惑星は1 VP、恒星は2 VP、勝利記録は1 VPです。最長航路と最大TVはそれぞれ2 VPです。</p>
+        </div>
+      )}
+
+      {tab === "terms" && (
+        <div className="helpContent">
+          <h2>用語対応</h2>
+          <dl>
+            <div><dt>惑星</dt><dd>開拓地。建てると隣接タイルから資源を得ます。</dd></div>
+            <div><dt>恒星</dt><dd>都市。惑星を強化し、産出が2倍になります。</dd></div>
+            <div><dt>星間航路</dt><dd>街道。新しい惑星を置くための接続路です。</dd></div>
+            <div><dt>スペースポート</dt><dd>港。接していると通信交易が有利になります。</dd></div>
+            <div><dt>中性子星</dt><dd>砂漠。資源は産出しません。</dd></div>
+            <div><dt>ユニヴァース クリミナル</dt><dd>盗賊。いるタイルの産出を止めます。</dd></div>
+            <div><dt>TV</dt><dd>騎士。使うとユニヴァース クリミナルを動かします。</dd></div>
+          </dl>
+          <h2>資源</h2>
+          <p>岩石惑星=岩石、鉱石惑星=レアメタル、資材工場=資材、ナノマシン工場=ナノマシン、水耕栽培=食料。</p>
+        </div>
+      )}
+
+      {tab === "cards" && (
+        <div className="helpContent">
+          <h2>新天地カード</h2>
+          <dl>
+            <div><dt>TV</dt><dd>ユニヴァース クリミナルを移動します。3枚以上で最大TVの候補です。</dd></div>
+            <div><dt>航路整備</dt><dd>無料で星間航路を2本まで建設できます。</dd></div>
+            <div><dt>徴収</dt><dd>選んだ資源を他プレイヤー全員から集めます。</dd></div>
+            <div><dt>補給衛星</dt><dd>選んだ資源を2つ受け取ります。</dd></div>
+            <div><dt>勝利記録</dt><dd>持っているだけで1 VPです。</dd></div>
+          </dl>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function usePeerRoom(state, setState, roomId, myPlayerId) {
   const [net, setNet] = useState({ mode: "local", status: "ローカル", share: "" });
   const peerRef = useRef(null);
@@ -884,6 +949,8 @@ function App() {
               {!me.hiddenNewFrontiers.length && <span className="muted">なし</span>}
             </div>
           </div>
+
+          <HelpPanel />
         </aside>
       </section>
 

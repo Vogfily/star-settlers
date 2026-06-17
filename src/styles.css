@@ -260,7 +260,8 @@ h2 {
 
 .costs,
 .trade,
-.frontiers {
+.frontiers,
+.helpBox {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding-top: 14px;
 }
@@ -305,6 +306,65 @@ h2 {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
+}
+
+.helpTabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.helpTabs button {
+  min-height: 34px;
+  font-size: 13px;
+}
+
+.helpTabs .selected {
+  color: #151515;
+  background: #fff3a8;
+  border-color: #fff3a8;
+}
+
+.helpContent {
+  display: grid;
+  gap: 10px;
+  color: #cbd6e7;
+  font-size: 13px;
+}
+
+.helpContent h2 {
+  margin: 0;
+  color: #edf2ff;
+  font-size: 14px;
+}
+
+.helpContent ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.helpContent dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.helpContent dl div {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+}
+
+.helpContent dt {
+  color: #fff3a8;
+  font-weight: 800;
+}
+
+.helpContent dd {
+  margin: 0;
 }
 
 .muted {
