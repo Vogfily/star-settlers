@@ -494,6 +494,7 @@ function createGame() {
     board: board,
     players: PLAYERS.map(function (player) {
       return _objectSpread(_objectSpread({}, player), {}, {
+        isCpu: false,
         resources: emptyResources(),
         hiddenNewFrontiers: [],
         playedNewFrontiers: [],
@@ -607,6 +608,10 @@ function currentPlayer(state) {
   var active = state.phase === "setup" ? state.setupOrder[state.setupStep] : state.turn;
   return state.players[active];
 }
+function isCpuPlayer(state, playerId) {
+  var _state$players$player;
+  return Boolean((_state$players$player = state.players[playerId]) === null || _state$players$player === void 0 ? void 0 : _state$players$player.isCpu);
+}
 function phaseLabel(state) {
   if (state.phase === "setup") return "初期配置";
   if (state.turnStage === "roll") return "サイコロ";
@@ -615,6 +620,382 @@ function phaseLabel(state) {
 }
 function isMainPhase(state) {
   return state.phase === "play" && state.turnStage === "main";
+}
+function numberWeight(number) {
+  return {
+    6: 5,
+    8: 5,
+    5: 4,
+    9: 4,
+    4: 3,
+    10: 3,
+    3: 2,
+    11: 2,
+    2: 1,
+    12: 1
+  }[number] || 0;
+}
+function playerResourceCoverage(state, playerId) {
+  var coverage = new Set();
+  state.board.vertices.forEach(function (vertex) {
+    var building = state.buildings[vertex.id];
+    if ((building === null || building === void 0 ? void 0 : building.player) !== playerId) return;
+    vertex.tiles.forEach(function (tileId) {
+      var terrain = state.board.tiles[tileId].terrain;
+      if (terrain !== "desert") coverage.add(terrain);
+    });
+  });
+  return coverage;
+}
+function vertexScore(state, vertexId, playerId) {
+  var vertex = state.board.vertices.find(function (item) {
+    return item.id === vertexId;
+  });
+  if (!vertex) return -999;
+  var coverage = playerResourceCoverage(state, playerId);
+  var score = 0;
+  vertex.tiles.forEach(function (tileId) {
+    var tile = state.board.tiles[tileId];
+    if (tile.terrain === "desert") return;
+    score += numberWeight(tile.number) * 2;
+    if (!coverage.has(tile.terrain)) score += 3;
+    if (tile.id === state.criminalTile) score -= 2;
+  });
+  if (state.board.spaceports.some(function (spaceport) {
+    return spaceport.vertices.includes(vertexId);
+  })) score += 3;
+  return score;
+}
+function bestPlanetVertex(state, playerId) {
+  var _state$board$vertices;
+  return ((_state$board$vertices = state.board.vertices.filter(function (vertex) {
+    return canBuildPlanet(state, vertex.id, playerId);
+  }).map(function (vertex) {
+    return {
+      id: vertex.id,
+      score: vertexScore(state, vertex.id, playerId)
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  })[0]) === null || _state$board$vertices === void 0 ? void 0 : _state$board$vertices.id) || null;
+}
+function bestStarVertex(state, playerId) {
+  var _state$board$vertices2;
+  return ((_state$board$vertices2 = state.board.vertices.filter(function (vertex) {
+    var _state$buildings$vert2, _state$buildings$vert3;
+    return ((_state$buildings$vert2 = state.buildings[vertex.id]) === null || _state$buildings$vert2 === void 0 ? void 0 : _state$buildings$vert2.player) === playerId && ((_state$buildings$vert3 = state.buildings[vertex.id]) === null || _state$buildings$vert3 === void 0 ? void 0 : _state$buildings$vert3.type) === "planet";
+  }).map(function (vertex) {
+    return {
+      id: vertex.id,
+      score: vertexScore(state, vertex.id, playerId)
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  })[0]) === null || _state$board$vertices2 === void 0 ? void 0 : _state$board$vertices2.id) || null;
+}
+function bestRouteEdge(state, playerId) {
+  var _state$board$edges$fi;
+  var free = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+  return ((_state$board$edges$fi = state.board.edges.filter(function (edge) {
+    return canBuildRoute(state, edge.id, playerId, free);
+  }).map(function (edge) {
+    return {
+      id: edge.id,
+      score: Math.max(vertexScore(state, edge.a, playerId), vertexScore(state, edge.b, playerId)) + (state.phase === "setup" ? 4 : 0)
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  })[0]) === null || _state$board$edges$fi === void 0 ? void 0 : _state$board$edges$fi.id) || null;
+}
+function discardForCpu(player, need) {
+  var bundle = emptyResources();
+  for (var i = 0; i < need; i += 1) {
+    var key = RESOURCE_KEYS.filter(function (resource) {
+      return (player.resources[resource] || 0) - (bundle[resource] || 0) > 0;
+    }).sort(function (a, b) {
+      return (player.resources[b] || 0) - (bundle[b] || 0) - ((player.resources[a] || 0) - (bundle[a] || 0));
+    })[0];
+    if (!key) break;
+    bundle[key] += 1;
+  }
+  return bundle;
+}
+function bestCriminalTile(state, actor) {
+  var _ref1, _candidates$0$id, _candidates$, _state$board$tiles$fi;
+  var leaderIds = state.players.filter(function (player) {
+    return player.id !== actor;
+  }).map(function (player) {
+    return {
+      id: player.id,
+      vp: getVp(state, player.id)
+    };
+  }).sort(function (a, b) {
+    return b.vp - a.vp;
+  }).map(function (entry) {
+    return entry.id;
+  });
+  var candidates = state.board.tiles.filter(function (tile) {
+    return tile.id !== state.criminalTile && tile.terrain !== "desert";
+  }).map(function (tile) {
+    var adjacentPlayers = _toConsumableArray(new Set(tile.corners.map(function (vertexId) {
+      var _state$buildings$vert4;
+      return (_state$buildings$vert4 = state.buildings[vertexId]) === null || _state$buildings$vert4 === void 0 ? void 0 : _state$buildings$vert4.player;
+    }).filter(function (id) {
+      return id !== undefined;
+    })));
+    var hitsOpponent = adjacentPlayers.filter(function (id) {
+      return id !== actor;
+    }).length;
+    var hitsSelf = adjacentPlayers.includes(actor) ? 1 : 0;
+    var leaderBonus = adjacentPlayers.reduce(function (sum, id) {
+      return sum + Math.max(0, 4 - leaderIds.indexOf(id));
+    }, 0);
+    return {
+      id: tile.id,
+      score: numberWeight(tile.number) * 3 + hitsOpponent * 5 + leaderBonus - hitsSelf * 8
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  });
+  return (_ref1 = (_candidates$0$id = (_candidates$ = candidates[0]) === null || _candidates$ === void 0 ? void 0 : _candidates$.id) !== null && _candidates$0$id !== void 0 ? _candidates$0$id : (_state$board$tiles$fi = state.board.tiles.find(function (tile) {
+    return tile.id !== state.criminalTile;
+  })) === null || _state$board$tiles$fi === void 0 ? void 0 : _state$board$tiles$fi.id) !== null && _ref1 !== void 0 ? _ref1 : state.criminalTile;
+}
+function bestStealVictim(state, victimIds) {
+  var _map$sort$0$id, _map$sort$;
+  return (_map$sort$0$id = (_map$sort$ = _toConsumableArray(victimIds).map(function (id) {
+    return {
+      id: id,
+      vp: getVp(state, id),
+      cards: totalResources(state.players[id].resources)
+    };
+  }).sort(function (a, b) {
+    return b.vp - a.vp || b.cards - a.cards;
+  })[0]) === null || _map$sort$ === void 0 ? void 0 : _map$sort$.id) !== null && _map$sort$0$id !== void 0 ? _map$sort$0$id : victimIds[0];
+}
+function findCpuBankTrade(state, playerId, cost) {
+  var player = state.players[playerId];
+  if (canAfford(player, cost)) return null;
+  var deficits = RESOURCE_KEYS.filter(function (key) {
+    return (player.resources[key] || 0) < (cost[key] || 0);
+  });
+  var _iterator = _createForOfIteratorHelper(deficits),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var take = _step.value;
+      var _iterator2 = _createForOfIteratorHelper(RESOURCE_KEYS),
+        _step2;
+      try {
+        var _loop = function _loop() {
+            var give = _step2.value;
+            if (give === take) return 0; // continue
+            var rate = tradeRateFor(state, playerId, give);
+            var afterGive = _objectSpread(_objectSpread({}, player.resources), {}, _defineProperty(_defineProperty({}, give, (player.resources[give] || 0) - rate), take, (player.resources[take] || 0) + 1));
+            if ((player.resources[give] || 0) >= rate && RESOURCE_KEYS.every(function (key) {
+              return (afterGive[key] || 0) >= (cost[key] || 0);
+            })) {
+              return {
+                v: {
+                  give: give,
+                  take: take
+                }
+              };
+            }
+          },
+          _ret;
+        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+          _ret = _loop();
+          if (_ret === 0) continue;
+          if (_ret) return _ret.v;
+        }
+      } catch (err) {
+        _iterator2.e(err);
+      } finally {
+        _iterator2.f();
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return null;
+}
+function bestCpuCollectResource(state, playerId) {
+  var _needOrder$map$sort$;
+  var needOrder = ["rare", "food", "rock", "material", "nano"];
+  return ((_needOrder$map$sort$ = needOrder.map(function (key) {
+    return {
+      key: key,
+      score: state.players.reduce(function (sum, player) {
+        return player.id === playerId ? sum : sum + (player.resources[key] || 0);
+      }, 0)
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  })[0]) === null || _needOrder$map$sort$ === void 0 ? void 0 : _needOrder$map$sort$.key) || "rare";
+}
+function nextCpuEvent(state) {
+  var _state$criminalMover, _state$pendingSteal;
+  if (state.action === "discard") {
+    var cpuDiscard = pendingDiscardEntries(state).find(function (_ref10) {
+      var _ref11 = _slicedToArray(_ref10, 1),
+        playerId = _ref11[0];
+      return isCpuPlayer(state, Number(playerId));
+    });
+    if (cpuDiscard) {
+      var _playerId = Number(cpuDiscard[0]);
+      return {
+        type: "discardResources",
+        resources: discardForCpu(state.players[_playerId], Number(cpuDiscard[1])),
+        playerId: _playerId
+      };
+    }
+  }
+  var active = currentPlayer(state);
+  if (!(active !== null && active !== void 0 && active.isCpu) || state.winner !== null || state.negotiation) return null;
+  var playerId = active.id;
+  var player = state.players[playerId];
+  if (state.phase === "setup") {
+    if (state.action === "planet") {
+      var vertexId = bestPlanetVertex(state, playerId);
+      return vertexId ? {
+        type: "vertex",
+        vertexId: vertexId,
+        playerId: playerId
+      } : null;
+    }
+    if (state.action === "route") {
+      var edgeId = bestRouteEdge(state, playerId);
+      return edgeId ? {
+        type: "edge",
+        edgeId: edgeId,
+        playerId: playerId
+      } : null;
+    }
+  }
+  if (state.phase !== "play" || state.turn !== playerId) return null;
+  if (state.action === "discard") {
+    var _state$pendingDiscard;
+    var need = Number(((_state$pendingDiscard = state.pendingDiscards) === null || _state$pendingDiscard === void 0 ? void 0 : _state$pendingDiscard[playerId]) || 0);
+    if (need > 0) return {
+      type: "discardResources",
+      resources: discardForCpu(player, need),
+      playerId: playerId
+    };
+    return null;
+  }
+  if (state.action === "criminal" && ((_state$criminalMover = state.criminalMover) !== null && _state$criminalMover !== void 0 ? _state$criminalMover : playerId) === playerId) {
+    return {
+      type: "selectTile",
+      tileId: bestCriminalTile(state, playerId),
+      playerId: playerId
+    };
+  }
+  if (state.action === "steal" && ((_state$pendingSteal = state.pendingSteal) === null || _state$pendingSteal === void 0 ? void 0 : _state$pendingSteal.thief) === playerId) {
+    return {
+      type: "stealResource",
+      victimId: bestStealVictim(state, state.pendingSteal.victims),
+      playerId: playerId
+    };
+  }
+  if (!state.rolled) return {
+    type: "roll",
+    playerId: playerId
+  };
+  if (!isMainPhase(state)) return null;
+  var playable = player.hiddenNewFrontiers.find(function (card) {
+    return frontierType(card) !== "point" && canPlayFrontier(card, state);
+  });
+  if (playable && player.frontierPlayedTurn !== state.turnCount) {
+    var type = frontierType(playable);
+    if (type === "tv") return {
+      type: "playDev",
+      card: "tv",
+      playerId: playerId
+    };
+    if (type === "collect") return {
+      type: "playDev",
+      card: "collect",
+      resource: bestCpuCollectResource(state, playerId),
+      playerId: playerId
+    };
+    if (type === "plenty") return {
+      type: "playDev",
+      card: "plenty",
+      a: "rare",
+      b: "food",
+      playerId: playerId
+    };
+    if (type === "route" && bestRouteEdge(state, playerId, true)) return {
+      type: "playDev",
+      card: "route",
+      playerId: playerId
+    };
+  }
+  if (state.action === "freeRoute") {
+    var _edgeId = bestRouteEdge(state, playerId, true);
+    return _edgeId ? {
+      type: "edge",
+      edgeId: _edgeId,
+      free: true,
+      playerId: playerId
+    } : {
+      type: "setAction",
+      action: "build",
+      playerId: playerId
+    };
+  }
+  var starId = bestStarVertex(state, playerId);
+  if (starId && canAfford(player, COSTS.star)) return {
+    type: "setAction",
+    action: "star",
+    playerId: playerId,
+    follow: {
+      type: "vertex",
+      vertexId: starId,
+      playerId: playerId
+    }
+  };
+  var planetId = bestPlanetVertex(state, playerId);
+  if (planetId && canAfford(player, COSTS.planet)) return {
+    type: "setAction",
+    action: "planet",
+    playerId: playerId,
+    follow: {
+      type: "vertex",
+      vertexId: planetId,
+      playerId: playerId
+    }
+  };
+  var routeId = bestRouteEdge(state, playerId);
+  if (routeId && canAfford(player, COSTS.route)) return {
+    type: "setAction",
+    action: "route",
+    playerId: playerId,
+    follow: {
+      type: "edge",
+      edgeId: routeId,
+      playerId: playerId
+    }
+  };
+  if (canAfford(player, COSTS.frontier) && state.deck.length) return {
+    type: "buyDev",
+    playerId: playerId
+  };
+  var tradeTarget = [COSTS.star, COSTS.planet, COSTS.route, COSTS.frontier].map(function (cost) {
+    return findCpuBankTrade(state, playerId, cost);
+  }).find(Boolean);
+  if (tradeTarget) return _objectSpread(_objectSpread({
+    type: "bankTrade"
+  }, tradeTarget), {}, {
+    playerId: playerId
+  });
+  return {
+    type: "endTurn",
+    playerId: playerId
+  };
 }
 function addLog(state, text) {
   state.log = [text].concat(_toConsumableArray(state.log)).slice(0, 8);
@@ -630,9 +1011,9 @@ function discardRequirement(player) {
   return total >= 8 ? Math.floor(total / 2) : 0;
 }
 function pendingDiscardEntries(state) {
-  return Object.entries(state.pendingDiscards || {}).filter(function (_ref1) {
-    var _ref10 = _slicedToArray(_ref1, 2),
-      value = _ref10[1];
+  return Object.entries(state.pendingDiscards || {}).filter(function (_ref12) {
+    var _ref13 = _slicedToArray(_ref12, 2),
+      value = _ref13[1];
     return value > 0;
   });
 }
@@ -640,8 +1021,8 @@ function adjacentStealVictims(state, tileId, thiefId) {
   var tile = state.board.tiles[tileId];
   if (!tile) return [];
   return _toConsumableArray(new Set(tile.corners.map(function (vertexId) {
-    var _state$buildings$vert2;
-    return (_state$buildings$vert2 = state.buildings[vertexId]) === null || _state$buildings$vert2 === void 0 ? void 0 : _state$buildings$vert2.player;
+    var _state$buildings$vert5;
+    return (_state$buildings$vert5 = state.buildings[vertexId]) === null || _state$buildings$vert5 === void 0 ? void 0 : _state$buildings$vert5.player;
   }).filter(function (playerId) {
     return playerId !== undefined && playerId !== thiefId && totalResources(state.players[playerId].resources) > 0;
   })));
@@ -751,13 +1132,13 @@ function isBlockedVertex(state, vertexId, playerId) {
   return building && building.player !== playerId;
 }
 function longestRouteLength(state, playerId) {
-  var ownEdges = new Set(Object.entries(state.routes).filter(function (_ref11) {
-    var _ref12 = _slicedToArray(_ref11, 2),
-      route = _ref12[1];
+  var ownEdges = new Set(Object.entries(state.routes).filter(function (_ref14) {
+    var _ref15 = _slicedToArray(_ref14, 2),
+      route = _ref15[1];
     return route.player === playerId;
-  }).map(function (_ref13) {
-    var _ref14 = _slicedToArray(_ref13, 1),
-      edgeId = _ref14[0];
+  }).map(function (_ref16) {
+    var _ref17 = _slicedToArray(_ref16, 1),
+      edgeId = _ref17[0];
     return edgeId;
   }));
   if (!ownEdges.size) return 0;
@@ -767,11 +1148,11 @@ function longestRouteLength(state, playerId) {
   function walk(vertexId, used) {
     if (isBlockedVertex(state, vertexId, playerId)) return 0;
     var best = 0;
-    var _iterator = _createForOfIteratorHelper(state.board.incidentEdges[vertexId] || []),
-      _step;
+    var _iterator3 = _createForOfIteratorHelper(state.board.incidentEdges[vertexId] || []),
+      _step3;
     try {
-      for (_iterator.s(); !(_step = _iterator.n()).done;) {
-        var edgeId = _step.value;
+      for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+        var edgeId = _step3.value;
         if (!ownEdges.has(edgeId) || used.has(edgeId)) continue;
         var edge = edgeById[edgeId];
         var nextVertex = edge.a === vertexId ? edge.b : edge.a;
@@ -780,25 +1161,25 @@ function longestRouteLength(state, playerId) {
         best = Math.max(best, 1 + walk(nextVertex, nextUsed));
       }
     } catch (err) {
-      _iterator.e(err);
+      _iterator3.e(err);
     } finally {
-      _iterator.f();
+      _iterator3.f();
     }
     return best;
   }
   var best = 0;
-  var _iterator2 = _createForOfIteratorHelper(ownEdges),
-    _step2;
+  var _iterator4 = _createForOfIteratorHelper(ownEdges),
+    _step4;
   try {
-    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-      var edgeId = _step2.value;
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+      var edgeId = _step4.value;
       var edge = edgeById[edgeId];
       best = Math.max(best, 1 + walk(edge.a, new Set([edgeId])), 1 + walk(edge.b, new Set([edgeId])));
     }
   } catch (err) {
-    _iterator2.e(err);
+    _iterator4.e(err);
   } finally {
-    _iterator2.f();
+    _iterator4.f();
   }
   return best;
 }
@@ -850,9 +1231,9 @@ function produce(state, total) {
   if (total === 7) {
     var pending = Object.fromEntries(state.players.map(function (player) {
       return [player.id, discardRequirement(player)];
-    }).filter(function (_ref15) {
-      var _ref16 = _slicedToArray(_ref15, 2),
-        need = _ref16[1];
+    }).filter(function (_ref18) {
+      var _ref19 = _slicedToArray(_ref18, 2),
+        need = _ref19[1];
       return need > 0;
     }));
     state.pendingDiscards = pending;
@@ -906,6 +1287,20 @@ function reducer(state, event) {
   if (event.type === "reset") return createGame(event.roomId || crypto.randomUUID().slice(0, 8));
   if (event.type === "rename") {
     next.players[actor].name = event.name.slice(0, 18) || "Player ".concat(actor + 1);
+    return next;
+  }
+  if (event.type === "setCpu") {
+    var targetId = Number(event.targetId);
+    var target = next.players[targetId];
+    if (!target) return next;
+    target.isCpu = Boolean(event.isCpu);
+    if (target.isCpu) {
+      target.name = target.name.startsWith("CPU") ? target.name : "CPU ".concat(String.fromCharCode(65 + targetId));
+      addLog(next, "".concat(target.name, " \u304CCPU\u3068\u3057\u3066\u53C2\u52A0\u3057\u307E\u3059\u3002"));
+    } else {
+      target.name = target.name.startsWith("CPU") ? "Player ".concat(targetId + 1) : target.name;
+      addLog(next, "".concat(target.name, " \u304C\u30D7\u30EC\u30A4\u30E4\u30FC\u67A0\u306B\u623B\u308A\u307E\u3057\u305F\u3002"));
+    }
     return next;
   }
   if (event.type === "setAction") {
@@ -1117,6 +1512,7 @@ function reducer(state, event) {
     };
     var partnerId = Number(event.partnerId);
     if (actor !== next.turn || !isMainPhase(next) || next.negotiation || partnerId === actor || !next.players[partnerId]) return next;
+    if (isCpuPlayer(next, actor) || isCpuPlayer(next, partnerId)) return next;
     if (!canPlayerOffer(next, partnerId, offer)) return next;
     next.negotiation = {
       id: crypto.randomUUID(),
@@ -1134,6 +1530,7 @@ function reducer(state, event) {
   if (event.type === "counterNegotiation") {
     var negotiation = next.negotiation;
     if (!negotiation || actor !== negotiation.awaiting) return next;
+    if (isCpuPlayer(next, actor)) return next;
     var _offer = {
       turnGives: cleanBundle(event.turnGives),
       partnerGives: cleanBundle(event.partnerGives)
@@ -1149,6 +1546,7 @@ function reducer(state, event) {
   if (event.type === "interveneNegotiation") {
     var _negotiation = next.negotiation;
     if (!_negotiation || actor === _negotiation.turnPlayer || actor === _negotiation.partner) return next;
+    if (isCpuPlayer(next, actor)) return next;
     var _offer2 = {
       turnGives: cleanBundle(event.turnGives),
       partnerGives: cleanBundle(event.partnerGives)
@@ -1168,6 +1566,7 @@ function reducer(state, event) {
   if (event.type === "acceptNegotiation") {
     var _negotiation2 = next.negotiation;
     if (!_negotiation2 || _negotiation2.decision || actor !== _negotiation2.awaiting) return next;
+    if (isCpuPlayer(next, actor)) return next;
     if (!canPlayerOffer(next, _negotiation2.partner, _negotiation2.currentOffer)) return next;
     _negotiation2.decision = {
       type: "accepted",
@@ -1181,6 +1580,7 @@ function reducer(state, event) {
   if (event.type === "rejectNegotiation") {
     var _negotiation3 = next.negotiation;
     if (!_negotiation3 || _negotiation3.decision || actor !== _negotiation3.awaiting) return next;
+    if (isCpuPlayer(next, actor)) return next;
     _negotiation3.decision = {
       type: "rejected",
       by: actor
@@ -1217,14 +1617,14 @@ function tileName(tile) {
   if (tile.terrain === "desert") return "ヴォイド";
   return RESOURCES[tile.terrain].terrain;
 }
-function Cost(_ref17) {
-  var cost = _ref17.cost;
+function Cost(_ref20) {
+  var cost = _ref20.cost;
   return /*#__PURE__*/React.createElement("span", {
     className: "cost"
-  }, Object.entries(cost).map(function (_ref18) {
-    var _ref19 = _slicedToArray(_ref18, 2),
-      key = _ref19[0],
-      value = _ref19[1];
+  }, Object.entries(cost).map(function (_ref21) {
+    var _ref22 = _slicedToArray(_ref21, 2),
+      key = _ref22[0],
+      value = _ref22[1];
     return /*#__PURE__*/React.createElement("span", {
       key: key,
       style: {
@@ -1233,10 +1633,10 @@ function Cost(_ref17) {
     }, RESOURCES[key].name, " ", value);
   }));
 }
-function ResourceBundleInput(_ref20) {
-  var title = _ref20.title,
-    value = _ref20.value,
-    _onChange = _ref20.onChange;
+function ResourceBundleInput(_ref23) {
+  var title = _ref23.title,
+    value = _ref23.value,
+    _onChange = _ref23.onChange;
   return /*#__PURE__*/React.createElement("div", {
     className: "bundleInput"
   }, /*#__PURE__*/React.createElement("h3", null, title), RESOURCE_KEYS.map(function (key) {
@@ -1256,11 +1656,11 @@ function ResourceBundleInput(_ref20) {
 function emptyBundle() {
   return emptyResources(0);
 }
-function NegotiationPanel(_ref21) {
-  var _state$players$find$i, _state$players$find;
-  var state = _ref21.state,
-    myPlayerId = _ref21.myPlayerId,
-    onEvent = _ref21.onEvent;
+function NegotiationPanel(_ref24) {
+  var _humanPartners$0$id, _humanPartners$, _state$players$select;
+  var state = _ref24.state,
+    myPlayerId = _ref24.myPlayerId,
+    onEvent = _ref24.onEvent;
   var _useState = useState((myPlayerId + 1) % 4),
     _useState2 = _slicedToArray(_useState, 2),
     partnerId = _useState2[0],
@@ -1280,10 +1680,13 @@ function NegotiationPanel(_ref21) {
     turnGives: cleanBundle(turnGives),
     partnerGives: cleanBundle(partnerGives)
   };
-  var selectedPartner = state.players[partnerId] ? partnerId : (_state$players$find$i = (_state$players$find = state.players.find(function (player) {
-    return player.id !== myPlayerId;
-  })) === null || _state$players$find === void 0 ? void 0 : _state$players$find.id) !== null && _state$players$find$i !== void 0 ? _state$players$find$i : 0;
-  var canStart = isTurnPlayer && isMainPhase(state) && !negotiation && selectedPartner !== myPlayerId && canPlayerOffer(state, selectedPartner, draftOffer);
+  var humanPartners = state.players.filter(function (player) {
+    return player.id !== myPlayerId && !player.isCpu;
+  });
+  var selectedPartner = humanPartners.some(function (player) {
+    return player.id === partnerId;
+  }) ? partnerId : (_humanPartners$0$id = (_humanPartners$ = humanPartners[0]) === null || _humanPartners$ === void 0 ? void 0 : _humanPartners$.id) !== null && _humanPartners$0$id !== void 0 ? _humanPartners$0$id : myPlayerId;
+  var canStart = isTurnPlayer && isMainPhase(state) && !negotiation && selectedPartner !== myPlayerId && !((_state$players$select = state.players[selectedPartner]) !== null && _state$players$select !== void 0 && _state$players$select.isCpu) && canPlayerOffer(state, selectedPartner, draftOffer);
   var canCounter = negotiation && !negotiation.decision && myPlayerId === negotiation.awaiting && canPlayerOffer(state, negotiation.partner, draftOffer);
   var canIntervene = negotiation && myPlayerId !== negotiation.turnPlayer && myPlayerId !== negotiation.partner && canPlayerOffer(state, myPlayerId, draftOffer) && isBetterOffer(draftOffer, negotiation.currentOffer, negotiation.usedCombos);
   var canShowIntervention = negotiation && canPotentiallyIntervene(state, myPlayerId);
@@ -1296,9 +1699,7 @@ function NegotiationPanel(_ref21) {
     onChange: function onChange(event) {
       return setPartnerId(Number(event.target.value));
     }
-  }, state.players.filter(function (player) {
-    return player.id !== myPlayerId;
-  }).map(function (player) {
+  }, humanPartners.map(function (player) {
     return /*#__PURE__*/React.createElement("option", {
       key: player.id,
       value: player.id
@@ -1325,7 +1726,7 @@ function NegotiationPanel(_ref21) {
     disabled: !canStart
   }, "\u4EA4\u63DB\u3092\u7533\u3057\u51FA\u308B"), /*#__PURE__*/React.createElement("p", {
     className: "spaceportNote"
-  }, "\u53CC\u65B9\u304C1\u679A\u4EE5\u4E0A\u51FA\u3059\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002\u6301\u3063\u3066\u3044\u306A\u3044\u8CC7\u6E90\u306F\u63D0\u793A\u3067\u304D\u307E\u305B\u3093\u3002")), negotiation && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "\u53CC\u65B9\u304C1\u679A\u4EE5\u4E0A\u51FA\u3059\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002CPU\u306F\u4EA4\u6E09\u306B\u53C2\u52A0\u3057\u307E\u305B\u3093\u3002")), negotiation && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "currentOffer"
   }, /*#__PURE__*/React.createElement("strong", null, state.players[negotiation.turnPlayer].name, " \u21C4 ", state.players[negotiation.partner].name), /*#__PURE__*/React.createElement("p", null, state.players[negotiation.turnPlayer].name, " \u304C\u6E21\u3059: ", bundleText(negotiation.currentOffer.turnGives)), /*#__PURE__*/React.createElement("p", null, state.players[negotiation.partner].name, " \u304C\u6E21\u3059: ", bundleText(negotiation.currentOffer.partnerGives)), negotiation.awaiting !== null && /*#__PURE__*/React.createElement("small", null, "\u8FD4\u7B54\u5F85\u3061: ", state.players[negotiation.awaiting].name), negotiation.decision && /*#__PURE__*/React.createElement("small", null, negotiation.decision.type === "accepted" ? "受諾済み" : "拒否済み", ": ", state.players[negotiation.decision.by].name)), !negotiation.decision && myPlayerId === negotiation.awaiting && /*#__PURE__*/React.createElement("div", {
     className: "negotiationActions"
@@ -1385,11 +1786,11 @@ function NegotiationPanel(_ref21) {
     }, line);
   }))));
 }
-function CriminalPanel(_ref22) {
-  var _state$pendingDiscard;
-  var state = _ref22.state,
-    myPlayerId = _ref22.myPlayerId,
-    onEvent = _ref22.onEvent;
+function CriminalPanel(_ref25) {
+  var _state$pendingDiscard2;
+  var state = _ref25.state,
+    myPlayerId = _ref25.myPlayerId,
+    onEvent = _ref25.onEvent;
   var _useState7 = useState(emptyBundle),
     _useState8 = _slicedToArray(_useState7, 2),
     discardBundle = _useState8[0],
@@ -1398,11 +1799,11 @@ function CriminalPanel(_ref22) {
     _useState0 = _slicedToArray(_useState9, 2),
     victimId = _useState0[0],
     setVictimId = _useState0[1];
-  var need = Number(((_state$pendingDiscard = state.pendingDiscards) === null || _state$pendingDiscard === void 0 ? void 0 : _state$pendingDiscard[myPlayerId]) || 0);
-  var pendingDiscardNames = pendingDiscardEntries(state).map(function (_ref23) {
-    var _ref24 = _slicedToArray(_ref23, 2),
-      playerId = _ref24[0],
-      needCount = _ref24[1];
+  var need = Number(((_state$pendingDiscard2 = state.pendingDiscards) === null || _state$pendingDiscard2 === void 0 ? void 0 : _state$pendingDiscard2[myPlayerId]) || 0);
+  var pendingDiscardNames = pendingDiscardEntries(state).map(function (_ref26) {
+    var _ref27 = _slicedToArray(_ref26, 2),
+      playerId = _ref27[0],
+      needCount = _ref27[1];
     return "".concat(state.players[playerId].name, ":").concat(needCount, "\u679A");
   });
   var pendingSteal = state.pendingSteal;
@@ -1482,7 +1883,7 @@ function HelpPanel() {
     }
   }, "\u672A\u77E5\u3078\u306E\u65C5")), tab === "rules" && /*#__PURE__*/React.createElement("div", {
     className: "helpContent"
-  }, /*#__PURE__*/React.createElement("h2", null, "\u904A\u3073\u65B9"), /*#__PURE__*/React.createElement("p", null, "\u30B5\u30A4\u30B3\u30ED\u3067\u8CC7\u6E90\u3092\u5F97\u3066\u3001\u5C0F\u90FD\u5E02\u3001\u5927\u90FD\u5E02\u3001\u9818\u754C\u8DEF\u3092\u5E83\u3052\u307E\u3059\u300210 VP\u306B\u5230\u9054\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u52DD\u5229\u3067\u3059\u3002"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "\u521D\u671F\u914D\u7F6E\u3067\u306F\u5404\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u5C0F\u90FD\u5E02\u3068\u9818\u754C\u8DEF\u30922\u30BB\u30C3\u30C8\u7F6E\u304D\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u81EA\u5206\u306E\u756A\u306F\u30B5\u30A4\u30B3\u30ED\u3001\u8CC7\u6E90\u7372\u5F97\u3001\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u306E\u9806\u306B\u9032\u307F\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u3067\u306F\u4EA4\u63DB\u3001\u5EFA\u8A2D\u3001\u672A\u77E5\u3078\u306E\u65C5\u3001\u4EA4\u6E09\u3092\u884C\u3048\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u51FA\u76EE\u3068\u540C\u3058\u6570\u5B57\u306E\u30BF\u30A4\u30EB\u306B\u96A3\u63A5\u3059\u308B\u5C0F\u90FD\u5E02\u306F\u8CC7\u6E901\u3001\u5927\u90FD\u5E02\u306F\u8CC7\u6E902\u3092\u5F97\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "7\u304C\u51FA\u305F\u3089\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u79FB\u52D5\u3057\u3001\u305D\u306E\u30BF\u30A4\u30EB\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002"), /*#__PURE__*/React.createElement("li", null, "\u6B21\u5143\u9580\u306B\u63A5\u3059\u308B\u5C0F\u90FD\u5E02\u304B\u5927\u90FD\u5E02\u304C\u3042\u308B\u3068\u30012:1\u307E\u305F\u306F3:1\u4EA4\u6613\u304C\u4F7F\u3048\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("h2", null, "\u52DD\u5229\u70B9"), /*#__PURE__*/React.createElement("p", null, "\u5C0F\u90FD\u5E02\u306F1 VP\u3001\u5927\u90FD\u5E02\u306F2 VP\u3001\u52DD\u5229\u8A18\u9332\u306F1 VP\u3067\u3059\u3002\u6700\u9577\u9818\u754C\u8DEF\u3068\u6700\u5927TVA\u529B\u306F\u305D\u308C\u305E\u308C2 VP\u3067\u3059\u3002")), tab === "terms" && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("h2", null, "\u904A\u3073\u65B9"), /*#__PURE__*/React.createElement("p", null, "\u30B5\u30A4\u30B3\u30ED\u3067\u8CC7\u6E90\u3092\u5F97\u3066\u3001\u5C0F\u90FD\u5E02\u3001\u5927\u90FD\u5E02\u3001\u9818\u754C\u8DEF\u3092\u5E83\u3052\u307E\u3059\u300210 VP\u306B\u5230\u9054\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u52DD\u5229\u3067\u3059\u3002"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "\u521D\u671F\u914D\u7F6E\u3067\u306F\u5404\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u5C0F\u90FD\u5E02\u3068\u9818\u754C\u8DEF\u30922\u30BB\u30C3\u30C8\u7F6E\u304D\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u81EA\u5206\u306E\u756A\u306F\u30B5\u30A4\u30B3\u30ED\u3001\u8CC7\u6E90\u7372\u5F97\u3001\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u306E\u9806\u306B\u9032\u307F\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u3067\u306F\u4EA4\u63DB\u3001\u5EFA\u8A2D\u3001\u672A\u77E5\u3078\u306E\u65C5\u3001\u4EA4\u6E09\u3092\u884C\u3048\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u51FA\u76EE\u3068\u540C\u3058\u6570\u5B57\u306E\u30BF\u30A4\u30EB\u306B\u96A3\u63A5\u3059\u308B\u5C0F\u90FD\u5E02\u306F\u8CC7\u6E901\u3001\u5927\u90FD\u5E02\u306F\u8CC7\u6E902\u3092\u5F97\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "7\u304C\u51FA\u305F\u3089\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u79FB\u52D5\u3057\u3001\u305D\u306E\u30BF\u30A4\u30EB\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002"), /*#__PURE__*/React.createElement("li", null, "\u6B21\u5143\u9580\u306B\u63A5\u3059\u308B\u5C0F\u90FD\u5E02\u304B\u5927\u90FD\u5E02\u304C\u3042\u308B\u3068\u30012:1\u307E\u305F\u306F3:1\u4EA4\u6613\u304C\u4F7F\u3048\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u4EBA\u6570\u304C\u8DB3\u308A\u306A\u3044\u6642\u306F\u30D7\u30EC\u30A4\u30E4\u30FC\u30AB\u30FC\u30C9\u304B\u3089CPU\u306B\u5207\u308A\u66FF\u3048\u3089\u308C\u307E\u3059\u3002CPU\u306F\u4EA4\u6E09\u306B\u53C2\u52A0\u3057\u307E\u305B\u3093\u3002")), /*#__PURE__*/React.createElement("h2", null, "\u52DD\u5229\u70B9"), /*#__PURE__*/React.createElement("p", null, "\u5C0F\u90FD\u5E02\u306F1 VP\u3001\u5927\u90FD\u5E02\u306F2 VP\u3001\u52DD\u5229\u8A18\u9332\u306F1 VP\u3067\u3059\u3002\u6700\u9577\u9818\u754C\u8DEF\u3068\u6700\u5927TVA\u529B\u306F\u305D\u308C\u305E\u308C2 VP\u3067\u3059\u3002")), tab === "terms" && /*#__PURE__*/React.createElement("div", {
     className: "helpContent"
   }, /*#__PURE__*/React.createElement("h2", null, "\u7528\u8A9E\u5BFE\u5FDC"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5C0F\u90FD\u5E02"), /*#__PURE__*/React.createElement("dd", null, "\u57FA\u790E\u62E0\u70B9\u3002\u5EFA\u3066\u308B\u3068\u96A3\u63A5\u30BF\u30A4\u30EB\u304B\u3089\u8CC7\u6E90\u3092\u5F97\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5927\u90FD\u5E02"), /*#__PURE__*/React.createElement("dd", null, "\u5C0F\u90FD\u5E02\u3092\u5F37\u5316\u3057\u305F\u62E0\u70B9\u3002\u7523\u51FA\u304C2\u500D\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u9818\u754C\u8DEF"), /*#__PURE__*/React.createElement("dd", null, "\u5C0F\u90FD\u5E02\u540C\u58EB\u3092\u3064\u306A\u304E\u3001\u65B0\u3057\u3044\u5C0F\u90FD\u5E02\u3092\u7F6E\u304F\u305F\u3081\u306E\u63A5\u7D9A\u8DEF\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u6B21\u5143\u9580"), /*#__PURE__*/React.createElement("dd", null, "\u63A5\u3057\u3066\u3044\u308B\u3068\u901A\u4FE1\u4EA4\u6613\u304C\u6709\u5229\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30F4\u30A9\u30A4\u30C9"), /*#__PURE__*/React.createElement("dd", null, "\u8CC7\u6E90\u3092\u7523\u51FA\u3057\u306A\u3044\u7279\u6B8A\u30BF\u30A4\u30EB\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA"), /*#__PURE__*/React.createElement("dd", null, "\u3044\u308B\u30BF\u30A4\u30EB\u306E\u7523\u51FA\u3092\u6B62\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TVA"), /*#__PURE__*/React.createElement("dd", null, "\u4F7F\u3046\u3068\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u52D5\u304B\u3057\u307E\u3059\u3002"))), /*#__PURE__*/React.createElement("h2", null, "\u8CC7\u6E90"), /*#__PURE__*/React.createElement("p", null, "\u9271\u7269\u6B21\u5143=\u30EC\u30A2\u30E1\u30BF\u30EB\u3001\u6A5F\u68B0\u6B21\u5143=\u30CA\u30CE\u30DE\u30B7\u30F3\u3001\u71B1\u5E2F\u6B21\u5143=\u5EFA\u6750\u3001\u5927\u8349\u539F=\u76AE\u9769\u3001\u80A5\u6C83\u306A\u5927\u5730=\u7A40\u7269\u3002")), tab === "cards" && /*#__PURE__*/React.createElement("div", {
     className: "helpContent"
@@ -1621,10 +2022,10 @@ function usePeerRoom(state, setState, roomId, myPlayerId) {
     send: send
   };
 }
-function Board(_ref25) {
-  var state = _ref25.state,
-    onEvent = _ref25.onEvent,
-    myPlayerId = _ref25.myPlayerId;
+function Board(_ref28) {
+  var state = _ref28.state,
+    onEvent = _ref28.onEvent,
+    myPlayerId = _ref28.myPlayerId;
   var active = currentPlayer(state).id;
   var canClick = state.phase === "setup" ? active === myPlayerId : state.turn === myPlayerId;
   return /*#__PURE__*/React.createElement("svg", {
@@ -1821,11 +2222,31 @@ function App() {
       return reducer(prev, owned);
     });
   }
+  useEffect(function () {
+    if (net.mode === "guest") return;
+    var event = nextCpuEvent(state);
+    if (!event) return;
+    var timer = setTimeout(function () {
+      setState(function (prev) {
+        var freshEvent = nextCpuEvent(prev);
+        if (!freshEvent) return prev;
+        var next = reducer(prev, freshEvent);
+        if (freshEvent.follow) next = reducer(next, freshEvent.follow);
+        return next;
+      });
+    }, state.phase === "setup" ? 550 : 850);
+    return function () {
+      return clearTimeout(timer);
+    };
+  }, [state, net.mode]);
   var me = state.players[myPlayerId];
   var active = currentPlayer(state);
   var actionable = state.phase === "setup" ? active.id === myPlayerId : state.turn === myPlayerId;
   var mainActionable = actionable && isMainPhase(state);
   var currentTradeRate = tradeRateFor(state, myPlayerId, trade.give);
+  var selectablePlayers = state.players.filter(function (player) {
+    return !player.isCpu || player.id === myPlayerId;
+  });
   return /*#__PURE__*/React.createElement("main", null, /*#__PURE__*/React.createElement("section", {
     className: "topbar"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", null, "Beyonders"), /*#__PURE__*/React.createElement("p", null, "\u5C0F\u90FD\u5E02\u3092\u5E83\u3052\u3001\u5927\u90FD\u5E02\u3078\u80B2\u3066\u300110\u70B9\u3092\u76EE\u6307\u30594\u4EBA\u7528\u30AA\u30F3\u30E9\u30A4\u30F3\u5353\u3002")), /*#__PURE__*/React.createElement("div", {
@@ -1871,11 +2292,11 @@ function App() {
     onChange: function onChange(e) {
       return setMyPlayerId(Number(e.target.value));
     }
-  }, state.players.map(function (p) {
+  }, selectablePlayers.map(function (p) {
     return /*#__PURE__*/React.createElement("option", {
       key: p.id,
       value: p.id
-    }, p.name);
+    }, p.name, p.isCpu ? " CPU" : "");
   }))), /*#__PURE__*/React.createElement("input", {
     value: me.name,
     onChange: function onChange(e) {
@@ -1883,7 +2304,8 @@ function App() {
         type: "rename",
         name: e.target.value
       });
-    }
+    },
+    disabled: me.isCpu
   })), /*#__PURE__*/React.createElement("div", {
     className: "actions"
   }, /*#__PURE__*/React.createElement("button", {
@@ -2073,11 +2495,24 @@ function App() {
         "--player": player.color
       },
       className: player.id === active.id ? "active" : ""
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("strong", null, player.name, player.bonus.longest && /*#__PURE__*/React.createElement("span", {
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("strong", null, player.name, player.isCpu && /*#__PURE__*/React.createElement("span", {
+      className: "badge cpuBadge"
+    }, "CPU"), player.bonus.longest && /*#__PURE__*/React.createElement("span", {
       className: "badge"
     }, "\u6700\u9577\u9818\u754C\u8DEF"), player.bonus.largestTv && /*#__PURE__*/React.createElement("span", {
       className: "badge"
-    }, "\u6700\u5927TVA\u529B")), /*#__PURE__*/React.createElement("span", null, getVp(state, player.id), " VP")), /*#__PURE__*/React.createElement("p", null, visibleResourceText(player, myPlayerId)), /*#__PURE__*/React.createElement("small", null, "TVA ", player.playedTv, " / \u672A\u77E5\u3078\u306E\u65C5 ", player.hiddenNewFrontiers.length, "\u679A / \u516C\u958B\u6E08\u307F: ", publicPlayedFrontiers(player), " / ", spaceportText(state, player.id)));
+    }, "\u6700\u5927TVA\u529B")), /*#__PURE__*/React.createElement("span", null, getVp(state, player.id), " VP")), /*#__PURE__*/React.createElement("p", null, visibleResourceText(player, myPlayerId)), /*#__PURE__*/React.createElement("small", null, "TVA ", player.playedTv, " / \u672A\u77E5\u3078\u306E\u65C5 ", player.hiddenNewFrontiers.length, "\u679A / \u516C\u958B\u6E08\u307F: ", publicPlayedFrontiers(player), " / ", spaceportText(state, player.id)), /*#__PURE__*/React.createElement("button", {
+      className: "cpuToggle",
+      onClick: function onClick() {
+        return act({
+          type: "setCpu",
+          targetId: player.id,
+          isCpu: !player.isCpu
+        });
+      },
+      disabled: player.id === myPlayerId || net.mode === "guest",
+      title: player.id === myPlayerId ? "自分の席はCPUにできません" : "CPUを切り替え"
+    }, player.isCpu ? "CPU解除" : "CPUにする"));
   })), /*#__PURE__*/React.createElement("section", {
     className: "log"
   }, /*#__PURE__*/React.createElement("h2", null, "\u822A\u884C\u30ED\u30B0"), state.winner !== null && /*#__PURE__*/React.createElement("div", {

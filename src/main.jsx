@@ -369,6 +369,7 @@ function createGame(roomId = crypto.randomUUID().slice(0, 8)) {
     board,
     players: PLAYERS.map((player) => ({
       ...player,
+      isCpu: false,
       resources: emptyResources(),
       hiddenNewFrontiers: [],
       playedNewFrontiers: [],
@@ -467,6 +468,10 @@ function currentPlayer(state) {
   return state.players[active];
 }
 
+function isCpuPlayer(state, playerId) {
+  return Boolean(state.players[playerId]?.isCpu);
+}
+
 function phaseLabel(state) {
   if (state.phase === "setup") return "初期配置";
   if (state.turnStage === "roll") return "サイコロ";
@@ -476,6 +481,192 @@ function phaseLabel(state) {
 
 function isMainPhase(state) {
   return state.phase === "play" && state.turnStage === "main";
+}
+
+function numberWeight(number) {
+  return ({ 6: 5, 8: 5, 5: 4, 9: 4, 4: 3, 10: 3, 3: 2, 11: 2, 2: 1, 12: 1 })[number] || 0;
+}
+
+function playerResourceCoverage(state, playerId) {
+  const coverage = new Set();
+  state.board.vertices.forEach((vertex) => {
+    const building = state.buildings[vertex.id];
+    if (building?.player !== playerId) return;
+    vertex.tiles.forEach((tileId) => {
+      const terrain = state.board.tiles[tileId].terrain;
+      if (terrain !== "desert") coverage.add(terrain);
+    });
+  });
+  return coverage;
+}
+
+function vertexScore(state, vertexId, playerId) {
+  const vertex = state.board.vertices.find((item) => item.id === vertexId);
+  if (!vertex) return -999;
+  const coverage = playerResourceCoverage(state, playerId);
+  let score = 0;
+  vertex.tiles.forEach((tileId) => {
+    const tile = state.board.tiles[tileId];
+    if (tile.terrain === "desert") return;
+    score += numberWeight(tile.number) * 2;
+    if (!coverage.has(tile.terrain)) score += 3;
+    if (tile.id === state.criminalTile) score -= 2;
+  });
+  if (state.board.spaceports.some((spaceport) => spaceport.vertices.includes(vertexId))) score += 3;
+  return score;
+}
+
+function bestPlanetVertex(state, playerId) {
+  return state.board.vertices
+    .filter((vertex) => canBuildPlanet(state, vertex.id, playerId))
+    .map((vertex) => ({ id: vertex.id, score: vertexScore(state, vertex.id, playerId) }))
+    .sort((a, b) => b.score - a.score)[0]?.id || null;
+}
+
+function bestStarVertex(state, playerId) {
+  return state.board.vertices
+    .filter((vertex) => state.buildings[vertex.id]?.player === playerId && state.buildings[vertex.id]?.type === "planet")
+    .map((vertex) => ({ id: vertex.id, score: vertexScore(state, vertex.id, playerId) }))
+    .sort((a, b) => b.score - a.score)[0]?.id || null;
+}
+
+function bestRouteEdge(state, playerId, free = false) {
+  return state.board.edges
+    .filter((edge) => canBuildRoute(state, edge.id, playerId, free))
+    .map((edge) => ({
+      id: edge.id,
+      score: Math.max(vertexScore(state, edge.a, playerId), vertexScore(state, edge.b, playerId)) + (state.phase === "setup" ? 4 : 0),
+    }))
+    .sort((a, b) => b.score - a.score)[0]?.id || null;
+}
+
+function discardForCpu(player, need) {
+  const bundle = emptyResources();
+  for (let i = 0; i < need; i += 1) {
+    const key = RESOURCE_KEYS
+      .filter((resource) => (player.resources[resource] || 0) - (bundle[resource] || 0) > 0)
+      .sort((a, b) => ((player.resources[b] || 0) - (bundle[b] || 0)) - ((player.resources[a] || 0) - (bundle[a] || 0)))[0];
+    if (!key) break;
+    bundle[key] += 1;
+  }
+  return bundle;
+}
+
+function bestCriminalTile(state, actor) {
+  const leaderIds = state.players
+    .filter((player) => player.id !== actor)
+    .map((player) => ({ id: player.id, vp: getVp(state, player.id) }))
+    .sort((a, b) => b.vp - a.vp)
+    .map((entry) => entry.id);
+  const candidates = state.board.tiles
+    .filter((tile) => tile.id !== state.criminalTile && tile.terrain !== "desert")
+    .map((tile) => {
+      const adjacentPlayers = [...new Set(tile.corners.map((vertexId) => state.buildings[vertexId]?.player).filter((id) => id !== undefined))];
+      const hitsOpponent = adjacentPlayers.filter((id) => id !== actor).length;
+      const hitsSelf = adjacentPlayers.includes(actor) ? 1 : 0;
+      const leaderBonus = adjacentPlayers.reduce((sum, id) => sum + Math.max(0, 4 - leaderIds.indexOf(id)), 0);
+      return { id: tile.id, score: numberWeight(tile.number) * 3 + hitsOpponent * 5 + leaderBonus - hitsSelf * 8 };
+    })
+    .sort((a, b) => b.score - a.score);
+  return candidates[0]?.id ?? state.board.tiles.find((tile) => tile.id !== state.criminalTile)?.id ?? state.criminalTile;
+}
+
+function bestStealVictim(state, victimIds) {
+  return [...victimIds]
+    .map((id) => ({ id, vp: getVp(state, id), cards: totalResources(state.players[id].resources) }))
+    .sort((a, b) => b.vp - a.vp || b.cards - a.cards)[0]?.id ?? victimIds[0];
+}
+
+function findCpuBankTrade(state, playerId, cost) {
+  const player = state.players[playerId];
+  if (canAfford(player, cost)) return null;
+  const deficits = RESOURCE_KEYS.filter((key) => (player.resources[key] || 0) < (cost[key] || 0));
+  for (const take of deficits) {
+    for (const give of RESOURCE_KEYS) {
+      if (give === take) continue;
+      const rate = tradeRateFor(state, playerId, give);
+      const afterGive = { ...player.resources, [give]: (player.resources[give] || 0) - rate, [take]: (player.resources[take] || 0) + 1 };
+      if ((player.resources[give] || 0) >= rate && RESOURCE_KEYS.every((key) => (afterGive[key] || 0) >= (cost[key] || 0))) {
+        return { give, take };
+      }
+    }
+  }
+  return null;
+}
+
+function bestCpuCollectResource(state, playerId) {
+  const needOrder = ["rare", "food", "rock", "material", "nano"];
+  return needOrder
+    .map((key) => ({
+      key,
+      score: state.players.reduce((sum, player) => player.id === playerId ? sum : sum + (player.resources[key] || 0), 0),
+    }))
+    .sort((a, b) => b.score - a.score)[0]?.key || "rare";
+}
+
+function nextCpuEvent(state) {
+  if (state.action === "discard") {
+    const cpuDiscard = pendingDiscardEntries(state).find(([playerId]) => isCpuPlayer(state, Number(playerId)));
+    if (cpuDiscard) {
+      const playerId = Number(cpuDiscard[0]);
+      return { type: "discardResources", resources: discardForCpu(state.players[playerId], Number(cpuDiscard[1])), playerId };
+    }
+  }
+  const active = currentPlayer(state);
+  if (!active?.isCpu || state.winner !== null || state.negotiation) return null;
+  const playerId = active.id;
+  const player = state.players[playerId];
+
+  if (state.phase === "setup") {
+    if (state.action === "planet") {
+      const vertexId = bestPlanetVertex(state, playerId);
+      return vertexId ? { type: "vertex", vertexId, playerId } : null;
+    }
+    if (state.action === "route") {
+      const edgeId = bestRouteEdge(state, playerId);
+      return edgeId ? { type: "edge", edgeId, playerId } : null;
+    }
+  }
+
+  if (state.phase !== "play" || state.turn !== playerId) return null;
+  if (state.action === "discard") {
+    const need = Number(state.pendingDiscards?.[playerId] || 0);
+    if (need > 0) return { type: "discardResources", resources: discardForCpu(player, need), playerId };
+    return null;
+  }
+  if (state.action === "criminal" && (state.criminalMover ?? playerId) === playerId) {
+    return { type: "selectTile", tileId: bestCriminalTile(state, playerId), playerId };
+  }
+  if (state.action === "steal" && state.pendingSteal?.thief === playerId) {
+    return { type: "stealResource", victimId: bestStealVictim(state, state.pendingSteal.victims), playerId };
+  }
+  if (!state.rolled) return { type: "roll", playerId };
+  if (!isMainPhase(state)) return null;
+
+  const playable = player.hiddenNewFrontiers.find((card) => frontierType(card) !== "point" && canPlayFrontier(card, state));
+  if (playable && player.frontierPlayedTurn !== state.turnCount) {
+    const type = frontierType(playable);
+    if (type === "tv") return { type: "playDev", card: "tv", playerId };
+    if (type === "collect") return { type: "playDev", card: "collect", resource: bestCpuCollectResource(state, playerId), playerId };
+    if (type === "plenty") return { type: "playDev", card: "plenty", a: "rare", b: "food", playerId };
+    if (type === "route" && bestRouteEdge(state, playerId, true)) return { type: "playDev", card: "route", playerId };
+  }
+  if (state.action === "freeRoute") {
+    const edgeId = bestRouteEdge(state, playerId, true);
+    return edgeId ? { type: "edge", edgeId, free: true, playerId } : { type: "setAction", action: "build", playerId };
+  }
+
+  const starId = bestStarVertex(state, playerId);
+  if (starId && canAfford(player, COSTS.star)) return { type: "setAction", action: "star", playerId, follow: { type: "vertex", vertexId: starId, playerId } };
+  const planetId = bestPlanetVertex(state, playerId);
+  if (planetId && canAfford(player, COSTS.planet)) return { type: "setAction", action: "planet", playerId, follow: { type: "vertex", vertexId: planetId, playerId } };
+  const routeId = bestRouteEdge(state, playerId);
+  if (routeId && canAfford(player, COSTS.route)) return { type: "setAction", action: "route", playerId, follow: { type: "edge", edgeId: routeId, playerId } };
+  if (canAfford(player, COSTS.frontier) && state.deck.length) return { type: "buyDev", playerId };
+
+  const tradeTarget = [COSTS.star, COSTS.planet, COSTS.route, COSTS.frontier].map((cost) => findCpuBankTrade(state, playerId, cost)).find(Boolean);
+  if (tradeTarget) return { type: "bankTrade", ...tradeTarget, playerId };
+  return { type: "endTurn", playerId };
 }
 
 function addLog(state, text) {
@@ -709,6 +900,20 @@ function reducer(state, event) {
     next.players[actor].name = event.name.slice(0, 18) || `Player ${actor + 1}`;
     return next;
   }
+  if (event.type === "setCpu") {
+    const targetId = Number(event.targetId);
+    const target = next.players[targetId];
+    if (!target) return next;
+    target.isCpu = Boolean(event.isCpu);
+    if (target.isCpu) {
+      target.name = target.name.startsWith("CPU") ? target.name : `CPU ${String.fromCharCode(65 + targetId)}`;
+      addLog(next, `${target.name} がCPUとして参加します。`);
+    } else {
+      target.name = target.name.startsWith("CPU") ? `Player ${targetId + 1}` : target.name;
+      addLog(next, `${target.name} がプレイヤー枠に戻りました。`);
+    }
+    return next;
+  }
   if (event.type === "setAction") {
     if (["discard", "steal"].includes(next.action)) return next;
     next.action = event.action;
@@ -895,6 +1100,7 @@ function reducer(state, event) {
     const offer = { turnGives: cleanBundle(event.turnGives), partnerGives: cleanBundle(event.partnerGives) };
     const partnerId = Number(event.partnerId);
     if (actor !== next.turn || !isMainPhase(next) || next.negotiation || partnerId === actor || !next.players[partnerId]) return next;
+    if (isCpuPlayer(next, actor) || isCpuPlayer(next, partnerId)) return next;
     if (!canPlayerOffer(next, partnerId, offer)) return next;
     next.negotiation = {
       id: crypto.randomUUID(),
@@ -912,6 +1118,7 @@ function reducer(state, event) {
   if (event.type === "counterNegotiation") {
     const negotiation = next.negotiation;
     if (!negotiation || actor !== negotiation.awaiting) return next;
+    if (isCpuPlayer(next, actor)) return next;
     const offer = { turnGives: cleanBundle(event.turnGives), partnerGives: cleanBundle(event.partnerGives) };
     if (!canPlayerOffer(next, negotiation.partner, offer)) return next;
     negotiation.currentOffer = offer;
@@ -927,6 +1134,7 @@ function reducer(state, event) {
   if (event.type === "interveneNegotiation") {
     const negotiation = next.negotiation;
     if (!negotiation || actor === negotiation.turnPlayer || actor === negotiation.partner) return next;
+    if (isCpuPlayer(next, actor)) return next;
     const offer = { turnGives: cleanBundle(event.turnGives), partnerGives: cleanBundle(event.partnerGives) };
     if (!canPlayerOffer(next, actor, offer) || !isBetterOffer(offer, negotiation.currentOffer, negotiation.usedCombos)) return next;
     const previousPartner = negotiation.partner;
@@ -946,6 +1154,7 @@ function reducer(state, event) {
   if (event.type === "acceptNegotiation") {
     const negotiation = next.negotiation;
     if (!negotiation || negotiation.decision || actor !== negotiation.awaiting) return next;
+    if (isCpuPlayer(next, actor)) return next;
     if (!canPlayerOffer(next, negotiation.partner, negotiation.currentOffer)) return next;
     negotiation.decision = { type: "accepted", by: actor };
     negotiation.awaiting = null;
@@ -959,6 +1168,7 @@ function reducer(state, event) {
   if (event.type === "rejectNegotiation") {
     const negotiation = next.negotiation;
     if (!negotiation || negotiation.decision || actor !== negotiation.awaiting) return next;
+    if (isCpuPlayer(next, actor)) return next;
     negotiation.decision = { type: "rejected", by: actor };
     negotiation.awaiting = null;
     negotiation.history = [
@@ -1041,12 +1251,14 @@ function NegotiationPanel({ state, myPlayerId, onEvent }) {
   const me = state.players[myPlayerId];
   const isTurnPlayer = myPlayerId === state.turn;
   const draftOffer = { turnGives: cleanBundle(turnGives), partnerGives: cleanBundle(partnerGives) };
-  const selectedPartner = state.players[partnerId] ? partnerId : state.players.find((player) => player.id !== myPlayerId)?.id ?? 0;
+  const humanPartners = state.players.filter((player) => player.id !== myPlayerId && !player.isCpu);
+  const selectedPartner = humanPartners.some((player) => player.id === partnerId) ? partnerId : humanPartners[0]?.id ?? myPlayerId;
   const canStart =
     isTurnPlayer &&
     isMainPhase(state) &&
     !negotiation &&
     selectedPartner !== myPlayerId &&
+    !state.players[selectedPartner]?.isCpu &&
     canPlayerOffer(state, selectedPartner, draftOffer);
 
   const canCounter =
@@ -1071,13 +1283,11 @@ function NegotiationPanel({ state, myPlayerId, onEvent }) {
           <label className="partnerSelect">
             交換相手
             <select value={selectedPartner} onChange={(event) => setPartnerId(Number(event.target.value))}>
-              {state.players
-                .filter((player) => player.id !== myPlayerId)
-                .map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.name}
-                  </option>
-                ))}
+              {humanPartners.map((player) => (
+                <option key={player.id} value={player.id}>
+                  {player.name}
+                </option>
+              ))}
             </select>
           </label>
           <div className="bundleGrid">
@@ -1090,7 +1300,7 @@ function NegotiationPanel({ state, myPlayerId, onEvent }) {
           >
             交換を申し出る
           </button>
-          <p className="spaceportNote">双方が1枚以上出す必要があります。持っていない資源は提示できません。</p>
+          <p className="spaceportNote">双方が1枚以上出す必要があります。CPUは交渉に参加しません。</p>
         </>
       )}
 
@@ -1238,6 +1448,7 @@ function HelpPanel() {
             <li>出目と同じ数字のタイルに隣接する小都市は資源1、大都市は資源2を得ます。</li>
             <li>7が出たらラヴェジャーズを移動し、そのタイルは産出しません。</li>
             <li>次元門に接する小都市か大都市があると、2:1または3:1交易が使えます。</li>
+            <li>人数が足りない時はプレイヤーカードからCPUに切り替えられます。CPUは交渉に参加しません。</li>
           </ul>
           <h2>勝利点</h2>
           <p>小都市は1 VP、大都市は2 VP、勝利記録は1 VPです。最長領界路と最大TVA力はそれぞれ2 VPです。</p>
@@ -1468,11 +1679,28 @@ function App() {
     setState((prev) => reducer(prev, owned));
   }
 
+  useEffect(() => {
+    if (net.mode === "guest") return;
+    const event = nextCpuEvent(state);
+    if (!event) return;
+    const timer = setTimeout(() => {
+      setState((prev) => {
+        const freshEvent = nextCpuEvent(prev);
+        if (!freshEvent) return prev;
+        let next = reducer(prev, freshEvent);
+        if (freshEvent.follow) next = reducer(next, freshEvent.follow);
+        return next;
+      });
+    }, state.phase === "setup" ? 550 : 850);
+    return () => clearTimeout(timer);
+  }, [state, net.mode]);
+
   const me = state.players[myPlayerId];
   const active = currentPlayer(state);
   const actionable = state.phase === "setup" ? active.id === myPlayerId : state.turn === myPlayerId;
   const mainActionable = actionable && isMainPhase(state);
   const currentTradeRate = tradeRateFor(state, myPlayerId, trade.give);
+  const selectablePlayers = state.players.filter((player) => !player.isCpu || player.id === myPlayerId);
 
   return (
     <main>
@@ -1512,14 +1740,14 @@ function App() {
             <label>
               あなた
               <select value={myPlayerId} onChange={(e) => setMyPlayerId(Number(e.target.value))}>
-                {state.players.map((p) => (
+                {selectablePlayers.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name}
+                    {p.name}{p.isCpu ? " CPU" : ""}
                   </option>
                 ))}
               </select>
             </label>
-            <input value={me.name} onChange={(e) => act({ type: "rename", name: e.target.value })} />
+            <input value={me.name} onChange={(e) => act({ type: "rename", name: e.target.value })} disabled={me.isCpu} />
           </div>
 
           <div className="actions">
@@ -1611,6 +1839,7 @@ function App() {
             <div>
               <strong>
                 {player.name}
+                {player.isCpu && <span className="badge cpuBadge">CPU</span>}
                 {player.bonus.longest && <span className="badge">最長領界路</span>}
                 {player.bonus.largestTv && <span className="badge">最大TVA力</span>}
               </strong>
@@ -1618,6 +1847,14 @@ function App() {
             </div>
             <p>{visibleResourceText(player, myPlayerId)}</p>
             <small>TVA {player.playedTv} / 未知への旅 {player.hiddenNewFrontiers.length}枚 / 公開済み: {publicPlayedFrontiers(player)} / {spaceportText(state, player.id)}</small>
+            <button
+              className="cpuToggle"
+              onClick={() => act({ type: "setCpu", targetId: player.id, isCpu: !player.isCpu })}
+              disabled={player.id === myPlayerId || net.mode === "guest"}
+              title={player.id === myPlayerId ? "自分の席はCPUにできません" : "CPUを切り替え"}
+            >
+              {player.isCpu ? "CPU解除" : "CPUにする"}
+            </button>
           </article>
         ))}
       </section>

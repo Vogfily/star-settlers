@@ -505,6 +505,10 @@ h2 {
   font-weight: 900;
 }
 
+.cpuBadge {
+  background: #bfe7ff;
+}
+
 .players p {
   margin-top: 8px;
   color: #cbd6e7;
@@ -515,6 +519,14 @@ h2 {
   display: block;
   margin-top: 8px;
   color: #91a0b7;
+}
+
+.cpuToggle {
+  width: 100%;
+  min-height: 30px;
+  margin-top: 10px;
+  padding: 6px 8px;
+  font-size: 12px;
 }
 
 .log {
