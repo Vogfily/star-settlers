@@ -54,16 +54,25 @@ const DEV_NAMES = {
 };
 
 const FIXED_SPACEPORTS = [
-  { outerIndex: 0, type: "nano" },
-  { outerIndex: 3, type: null },
-  { outerIndex: 6, type: "food" },
-  { outerIndex: 9, type: null },
-  { outerIndex: 13, type: "rare" },
-  { outerIndex: 16, type: null },
-  { outerIndex: 19, type: "rock" },
-  { outerIndex: 23, type: "material" },
-  { outerIndex: 26, type: null },
+  { tileNumber: 3, side: "upperLeft", type: null },
+  { tileNumber: 8, side: "left", type: null },
+  { tileNumber: 16, side: "right", type: null },
+  { tileNumber: 19, side: "lowerRight", type: null },
+  { tileNumber: 2, side: "upperLeft", type: "rare" },
+  { tileNumber: 4, side: "upperLeft", type: "nano" },
+  { tileNumber: 7, side: "right", type: "nano" },
+  { tileNumber: 13, side: "lowerLeft", type: "material" },
+  { tileNumber: 18, side: "lowerLeft", type: "rock" },
 ];
+
+const HEX_SIDE_INDEX = {
+  right: 0,
+  lowerRight: 1,
+  lowerLeft: 2,
+  left: 3,
+  upperLeft: 4,
+  upperRight: 5,
+};
 
 const BUILD_LABEL = {
   route: "星間航路",
@@ -278,31 +287,32 @@ function makeBoard(seedText) {
     incidentEdges[e.a].push(e.id);
     incidentEdges[e.b].push(e.id);
   });
-  const outerEdges = edgeList
-    .filter((edge) => edge.tiles.length === 1)
-    .map((edge) => {
+  const numberedTiles = [...tiles].sort((a, b) => (Math.abs(a.center.y - b.center.y) > 1 ? a.center.y - b.center.y : a.center.x - b.center.x));
+  const spaceports = FIXED_SPACEPORTS.map((spaceport, index) => {
+      const tile = numberedTiles[spaceport.tileNumber - 1];
+      const sideIndex = HEX_SIDE_INDEX[spaceport.side];
+      const aId = tile.corners[sideIndex];
+      const bId = tile.corners[(sideIndex + 1) % 6];
+      const edge = edges.get(edgeKey(aId, bId));
+      const type = spaceport.type;
       const a = vertices.get(edge.a);
       const b = vertices.get(edge.b);
       const x = (a.x + b.x) / 2;
       const y = (a.y + b.y) / 2;
-      return { ...edge, x, y, angle: Math.atan2(y - CENTER.y, x - CENTER.x) };
-    })
-    .sort((a, b) => a.angle - b.angle);
-  const spaceports = FIXED_SPACEPORTS.map((spaceport, index) => {
-      const edge = outerEdges[spaceport.outerIndex];
-      const type = spaceport.type;
-      const dx = edge.x - CENTER.x;
-      const dy = edge.y - CENTER.y;
+      const dx = x - CENTER.x;
+      const dy = y - CENTER.y;
       const length = Math.hypot(dx, dy) || 1;
       return {
         id: `spaceport-${index}`,
         edgeId: edge.id,
         vertices: [edge.a, edge.b],
         type,
-        x: edge.x,
-        y: edge.y,
-        labelX: edge.x + (dx / length) * 42,
-        labelY: edge.y + (dy / length) * 42,
+        tileNumber: spaceport.tileNumber,
+        side: spaceport.side,
+        x,
+        y,
+        labelX: x + (dx / length) * 42,
+        labelY: y + (dy / length) * 42,
       };
     });
 

@@ -146,33 +146,50 @@ var DEV_NAMES = {
   point: "勝利記録"
 };
 var FIXED_SPACEPORTS = [{
-  outerIndex: 0,
-  type: "nano"
-}, {
-  outerIndex: 3,
+  tileNumber: 3,
+  side: "upperLeft",
   type: null
 }, {
-  outerIndex: 6,
-  type: "food"
-}, {
-  outerIndex: 9,
+  tileNumber: 8,
+  side: "left",
   type: null
 }, {
-  outerIndex: 13,
+  tileNumber: 16,
+  side: "right",
+  type: null
+}, {
+  tileNumber: 19,
+  side: "lowerRight",
+  type: null
+}, {
+  tileNumber: 2,
+  side: "upperLeft",
   type: "rare"
 }, {
-  outerIndex: 16,
-  type: null
+  tileNumber: 4,
+  side: "upperLeft",
+  type: "nano"
 }, {
-  outerIndex: 19,
-  type: "rock"
+  tileNumber: 7,
+  side: "right",
+  type: "nano"
 }, {
-  outerIndex: 23,
+  tileNumber: 13,
+  side: "lowerLeft",
   type: "material"
 }, {
-  outerIndex: 26,
-  type: null
+  tileNumber: 18,
+  side: "lowerLeft",
+  type: "rock"
 }];
+var HEX_SIDE_INDEX = {
+  right: 0,
+  lowerRight: 1,
+  lowerLeft: 2,
+  left: 3,
+  upperLeft: 4,
+  upperRight: 5
+};
 var BUILD_LABEL = {
   route: "星間航路",
   planet: "惑星",
@@ -383,36 +400,34 @@ function makeBoard(seedText) {
     incidentEdges[e.a].push(e.id);
     incidentEdges[e.b].push(e.id);
   });
-  var outerEdges = edgeList.filter(function (edge) {
-    return edge.tiles.length === 1;
-  }).map(function (edge) {
+  var numberedTiles = _toConsumableArray(tiles).sort(function (a, b) {
+    return Math.abs(a.center.y - b.center.y) > 1 ? a.center.y - b.center.y : a.center.x - b.center.x;
+  });
+  var spaceports = FIXED_SPACEPORTS.map(function (spaceport, index) {
+    var tile = numberedTiles[spaceport.tileNumber - 1];
+    var sideIndex = HEX_SIDE_INDEX[spaceport.side];
+    var aId = tile.corners[sideIndex];
+    var bId = tile.corners[(sideIndex + 1) % 6];
+    var edge = edges.get(edgeKey(aId, bId));
+    var type = spaceport.type;
     var a = vertices.get(edge.a);
     var b = vertices.get(edge.b);
     var x = (a.x + b.x) / 2;
     var y = (a.y + b.y) / 2;
-    return _objectSpread(_objectSpread({}, edge), {}, {
-      x: x,
-      y: y,
-      angle: Math.atan2(y - CENTER.y, x - CENTER.x)
-    });
-  }).sort(function (a, b) {
-    return a.angle - b.angle;
-  });
-  var spaceports = FIXED_SPACEPORTS.map(function (spaceport, index) {
-    var edge = outerEdges[spaceport.outerIndex];
-    var type = spaceport.type;
-    var dx = edge.x - CENTER.x;
-    var dy = edge.y - CENTER.y;
+    var dx = x - CENTER.x;
+    var dy = y - CENTER.y;
     var length = Math.hypot(dx, dy) || 1;
     return {
       id: "spaceport-".concat(index),
       edgeId: edge.id,
       vertices: [edge.a, edge.b],
       type: type,
-      x: edge.x,
-      y: edge.y,
-      labelX: edge.x + dx / length * 42,
-      labelY: edge.y + dy / length * 42
+      tileNumber: spaceport.tileNumber,
+      side: spaceport.side,
+      x: x,
+      y: y,
+      labelX: x + dx / length * 42,
+      labelY: y + dy / length * 42
     };
   });
   return {
