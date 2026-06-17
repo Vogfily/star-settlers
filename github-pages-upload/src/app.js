@@ -1,0 +1,2533 @@
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+var _React = React,
+  useEffect = _React.useEffect,
+  useMemo = _React.useMemo,
+  useRef = _React.useRef,
+  useState = _React.useState;
+function Icon(_ref) {
+  var label = _ref.label;
+  return /*#__PURE__*/React.createElement("span", {
+    className: "icon",
+    "aria-hidden": "true"
+  }, label);
+}
+var Copy = function Copy() {
+  return /*#__PURE__*/React.createElement(Icon, {
+    label: "\u29C9"
+  });
+};
+var Dice5 = function Dice5() {
+  return /*#__PURE__*/React.createElement(Icon, {
+    label: "\u2684"
+  });
+};
+var Orbit = function Orbit() {
+  return /*#__PURE__*/React.createElement(Icon, {
+    label: "\u25CE"
+  });
+};
+var RadioTower = function RadioTower() {
+  return /*#__PURE__*/React.createElement(Icon, {
+    label: "\u2301"
+  });
+};
+var Rocket = function Rocket() {
+  return /*#__PURE__*/React.createElement(Icon, {
+    label: "\u2197"
+  });
+};
+var Satellite = function Satellite() {
+  return /*#__PURE__*/React.createElement(Icon, {
+    label: "\u25C9"
+  });
+};
+var Shuffle = function Shuffle() {
+  return /*#__PURE__*/React.createElement(Icon, {
+    label: "\u21C4"
+  });
+};
+var Swords = function Swords() {
+  return /*#__PURE__*/React.createElement(Icon, {
+    label: "!"
+  });
+};
+var Undo2 = function Undo2() {
+  return /*#__PURE__*/React.createElement(Icon, {
+    label: "\u2713"
+  });
+};
+var RESOURCES = {
+  rock: {
+    name: "レアメタル",
+    terrain: "鉱物次元",
+    color: "#a3544a"
+  },
+  rare: {
+    name: "ナノマシン",
+    terrain: "機械次元",
+    color: "#64748b"
+  },
+  material: {
+    name: "建材",
+    terrain: "熱帯次元",
+    color: "#2f855a"
+  },
+  nano: {
+    name: "皮革",
+    terrain: "大草原",
+    color: "#7c9a3e"
+  },
+  food: {
+    name: "穀物",
+    terrain: "肥沃な大地",
+    color: "#d5a11e"
+  }
+};
+var RESOURCE_KEYS = Object.keys(RESOURCES);
+var PLAYERS = [{
+  id: 0,
+  name: "Player A",
+  color: "#ff5d73"
+}, {
+  id: 1,
+  name: "Player B",
+  color: "#31b6c4"
+}, {
+  id: 2,
+  name: "Player C",
+  color: "#f6b642"
+}, {
+  id: 3,
+  name: "Player D",
+  color: "#8b7cf6"
+}];
+var COSTS = {
+  route: {
+    rock: 1,
+    material: 1
+  },
+  planet: {
+    rock: 1,
+    material: 1,
+    nano: 1,
+    food: 1
+  },
+  star: {
+    rare: 3,
+    food: 2
+  },
+  frontier: {
+    rare: 1,
+    nano: 1,
+    food: 1
+  }
+};
+var BUILD_LIMITS = {
+  route: 15,
+  planet: 5,
+  star: 4
+};
+var DEV_DECK = [].concat(_toConsumableArray(Array(14).fill("tv")), _toConsumableArray(Array(2).fill("route")), _toConsumableArray(Array(2).fill("collect")), _toConsumableArray(Array(2).fill("plenty")), _toConsumableArray(Array(5).fill("point")));
+var DEV_NAMES = {
+  tv: "TVA",
+  route: "領界路開通",
+  collect: "押収",
+  plenty: "補給衛星",
+  point: "勝利記録"
+};
+var FIXED_SPACEPORTS = [{
+  tileNumber: 3,
+  side: "upperLeft",
+  type: null
+}, {
+  tileNumber: 8,
+  side: "left",
+  type: null
+}, {
+  tileNumber: 16,
+  side: "right",
+  type: null
+}, {
+  tileNumber: 19,
+  side: "lowerRight",
+  type: null
+}, {
+  tileNumber: 2,
+  side: "upperLeft",
+  type: "rare"
+}, {
+  tileNumber: 4,
+  side: "upperLeft",
+  type: "nano"
+}, {
+  tileNumber: 7,
+  side: "right",
+  type: "nano"
+}, {
+  tileNumber: 13,
+  side: "lowerLeft",
+  type: "material"
+}, {
+  tileNumber: 18,
+  side: "lowerLeft",
+  type: "rock"
+}];
+var HEX_SIDE_INDEX = {
+  right: 0,
+  lowerRight: 1,
+  lowerLeft: 2,
+  left: 3,
+  upperLeft: 4,
+  upperRight: 5
+};
+var BUILD_LABEL = {
+  route: "領界路",
+  planet: "小都市",
+  star: "大都市",
+  frontier: "未知への旅"
+};
+var TILE_SETUP = ["material", "nano", "rock", "food", "rare", "rock", "food", "material", "nano", "desert", "material", "rare", "material", "food", "nano", "rock", "rare", "food", "nano"];
+var RESOURCE_TILE_SETUP = TILE_SETUP.filter(function (tile) {
+  return tile !== "desert";
+});
+var FIXED_NUMBER_BY_TILE = {
+  1: 11,
+  2: 12,
+  3: 9,
+  4: 4,
+  5: 6,
+  6: 5,
+  7: 10,
+  8: null,
+  9: 3,
+  10: 11,
+  11: 4,
+  12: 8,
+  13: 8,
+  14: 10,
+  15: 9,
+  16: 3,
+  17: 5,
+  18: 2,
+  19: 6
+};
+var NEUTRON_TILE_NUMBER = 8;
+var HEX_COORDS = [];
+for (var q = -2; q <= 2; q += 1) {
+  var r1 = Math.max(-2, -q - 2);
+  var r2 = Math.min(2, -q + 2);
+  for (var r = r1; r <= r2; r += 1) HEX_COORDS.push({
+    q: q,
+    r: r
+  });
+}
+var HEX_SIZE = 54;
+var CENTER = {
+  x: 360,
+  y: 340
+};
+var EPS = 8;
+function mulberry32(seed) {
+  return function random() {
+    var t = seed += 0x6d2b79f5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hashString(input) {
+  var hash = 2166136261;
+  for (var i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+function shuffle(items, random) {
+  var next = _toConsumableArray(items);
+  for (var i = next.length - 1; i > 0; i -= 1) {
+    var j = Math.floor(random() * (i + 1));
+    var _ref2 = [next[j], next[i]];
+    next[i] = _ref2[0];
+    next[j] = _ref2[1];
+  }
+  return next;
+}
+function hexToPixel(q, r) {
+  return {
+    x: CENTER.x + HEX_SIZE * Math.sqrt(3) * (q + r / 2),
+    y: CENTER.y + HEX_SIZE * 1.5 * r
+  };
+}
+function pointKey(point) {
+  return "".concat(Math.round(point.x / EPS), ":").concat(Math.round(point.y / EPS));
+}
+function edgeKey(a, b) {
+  return [a, b].sort().join("|");
+}
+function addRes(target, key, amount) {
+  if (!key || key === "desert") return;
+  target[key] = (target[key] || 0) + amount;
+}
+function emptyResources() {
+  var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+  return Object.fromEntries(RESOURCE_KEYS.map(function (key) {
+    return [key, value];
+  }));
+}
+function totalResources(resources) {
+  return RESOURCE_KEYS.reduce(function (sum, key) {
+    return sum + Number(resources[key] || 0);
+  }, 0);
+}
+function hasResources(player, resources) {
+  return RESOURCE_KEYS.every(function (key) {
+    return (player.resources[key] || 0) >= Number(resources[key] || 0);
+  });
+}
+function moveResources(from, to, resources) {
+  RESOURCE_KEYS.forEach(function (key) {
+    var amount = Number(resources[key] || 0);
+    from.resources[key] -= amount;
+    to.resources[key] += amount;
+  });
+}
+function cleanBundle(resources) {
+  return Object.fromEntries(RESOURCE_KEYS.map(function (key) {
+    return [key, Math.max(0, Number(resources[key] || 0))];
+  }));
+}
+function bundleText(resources) {
+  var parts = RESOURCE_KEYS.filter(function (key) {
+    return Number(resources[key] || 0) > 0;
+  }).map(function (key) {
+    return "".concat(RESOURCES[key].name).concat(resources[key]);
+  });
+  return parts.length ? parts.join(" + ") : "なし";
+}
+function bundleSignature(resources) {
+  return RESOURCE_KEYS.filter(function (key) {
+    return Number(resources[key] || 0) > 0;
+  }).join("+") || "none";
+}
+function offerSignature(offer) {
+  return "".concat(bundleSignature(offer.turnGives), "=>").concat(bundleSignature(offer.partnerGives));
+}
+function isGiftOffer(offer) {
+  return totalResources(offer.turnGives) === 0 || totalResources(offer.partnerGives) === 0;
+}
+function isBetterOffer(candidate, current) {
+  var usedCombos = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+  var candidateTurnGives = totalResources(candidate.turnGives);
+  var candidatePartnerGives = totalResources(candidate.partnerGives);
+  var currentTurnGives = totalResources(current.turnGives);
+  var currentPartnerGives = totalResources(current.partnerGives);
+  var sameTurnCost = candidateTurnGives === currentTurnGives;
+  var samePartnerPay = candidatePartnerGives === currentPartnerGives;
+  var lowerTurnCost = candidateTurnGives < currentTurnGives;
+  var higherPartnerPay = candidatePartnerGives > currentPartnerGives;
+  var newCombo = !usedCombos.includes(offerSignature(candidate));
+  if (samePartnerPay && lowerTurnCost) return true;
+  if (sameTurnCost && higherPartnerPay) return true;
+  return newCombo && candidateTurnGives <= currentTurnGives && candidatePartnerGives >= currentPartnerGives && (lowerTurnCost || higherPartnerPay);
+}
+function canPlayerOffer(state, partnerId, offer) {
+  var turnPlayer = state.players[state.turn];
+  var partner = state.players[partnerId];
+  return !isGiftOffer(offer) && hasResources(turnPlayer, offer.turnGives) && hasResources(partner, offer.partnerGives);
+}
+function canPotentiallyIntervene(state, playerId) {
+  var negotiation = state.negotiation;
+  if (!negotiation || playerId === negotiation.turnPlayer || playerId === negotiation.partner) return false;
+  var current = negotiation.currentOffer;
+  var turnPlayer = state.players[negotiation.turnPlayer];
+  var player = state.players[playerId];
+  var turnCost = totalResources(current.turnGives);
+  var partnerPay = totalResources(current.partnerGives);
+  var playerCards = totalResources(player.resources);
+  if (turnCost > 1 && hasResources(turnPlayer, current.turnGives) && hasResources(player, current.partnerGives)) return true;
+  if (playerCards > partnerPay && hasResources(turnPlayer, current.turnGives)) return true;
+  return false;
+}
+function spaceportName(type) {
+  return type ? "".concat(RESOURCES[type].name, " 2:1") : "3:1";
+}
+function visualTileNumberMap() {
+  return new Map([].concat(HEX_COORDS).sort(function (a, b) {
+    return a.r === b.r ? hexToPixel(a.q, a.r).x - hexToPixel(b.q, b.r).x : a.r - b.r;
+  }).map(function (coord, index) {
+    return ["".concat(coord.q, ":").concat(coord.r), index + 1];
+  }));
+}
+function makeBoard(seedText) {
+  var random = mulberry32(hashString(seedText));
+  var boardNumbers = visualTileNumberMap();
+  var shuffledResources = shuffle(RESOURCE_TILE_SETUP, random);
+  var vertices = new Map();
+  var edges = new Map();
+  var tiles = HEX_COORDS.map(function (coord, index) {
+    var _FIXED_NUMBER_BY_TILE;
+    var center = hexToPixel(coord.q, coord.r);
+    var boardNumber = boardNumbers.get("".concat(coord.q, ":").concat(coord.r));
+    var terrain = boardNumber === NEUTRON_TILE_NUMBER ? "desert" : shuffledResources.pop();
+    var number = (_FIXED_NUMBER_BY_TILE = FIXED_NUMBER_BY_TILE[boardNumber]) !== null && _FIXED_NUMBER_BY_TILE !== void 0 ? _FIXED_NUMBER_BY_TILE : null;
+    var corners = Array.from({
+      length: 6
+    }, function (_, i) {
+      var angle = Math.PI / 180 * (60 * i - 30);
+      var point = {
+        x: center.x + HEX_SIZE * Math.cos(angle),
+        y: center.y + HEX_SIZE * Math.sin(angle)
+      };
+      var key = pointKey(point);
+      if (!vertices.has(key)) vertices.set(key, {
+        id: key,
+        x: point.x,
+        y: point.y,
+        tiles: []
+      });
+      vertices.get(key).tiles.push(index);
+      return key;
+    });
+    for (var i = 0; i < 6; i += 1) {
+      var key = edgeKey(corners[i], corners[(i + 1) % 6]);
+      if (!edges.has(key)) edges.set(key, {
+        id: key,
+        a: corners[i],
+        b: corners[(i + 1) % 6],
+        tiles: []
+      });
+      edges.get(key).tiles.push(index);
+    }
+    return _objectSpread(_objectSpread({
+      id: index,
+      boardNumber: boardNumber
+    }, coord), {}, {
+      center: center,
+      terrain: terrain,
+      number: number,
+      corners: corners
+    });
+  });
+  var vertexList = _toConsumableArray(vertices.values());
+  var edgeList = _toConsumableArray(edges.values());
+  var adjacency = {};
+  var incidentEdges = {};
+  vertexList.forEach(function (v) {
+    adjacency[v.id] = new Set();
+    incidentEdges[v.id] = [];
+  });
+  edgeList.forEach(function (e) {
+    adjacency[e.a].add(e.b);
+    adjacency[e.b].add(e.a);
+    incidentEdges[e.a].push(e.id);
+    incidentEdges[e.b].push(e.id);
+  });
+  var spaceports = FIXED_SPACEPORTS.map(function (spaceport, index) {
+    var tile = tiles.find(function (item) {
+      return item.boardNumber === spaceport.tileNumber;
+    });
+    var sideIndex = HEX_SIDE_INDEX[spaceport.side];
+    var aId = tile.corners[sideIndex];
+    var bId = tile.corners[(sideIndex + 1) % 6];
+    var edge = edges.get(edgeKey(aId, bId));
+    var type = spaceport.type;
+    var a = vertices.get(edge.a);
+    var b = vertices.get(edge.b);
+    var x = (a.x + b.x) / 2;
+    var y = (a.y + b.y) / 2;
+    var dx = x - CENTER.x;
+    var dy = y - CENTER.y;
+    var length = Math.hypot(dx, dy) || 1;
+    return {
+      id: "spaceport-".concat(index),
+      edgeId: edge.id,
+      vertices: [edge.a, edge.b],
+      type: type,
+      tileNumber: spaceport.tileNumber,
+      side: spaceport.side,
+      x: x,
+      y: y,
+      labelX: x + dx / length * 42,
+      labelY: y + dy / length * 42
+    };
+  });
+  return {
+    tiles: tiles,
+    vertices: vertexList,
+    edges: edgeList,
+    spaceports: spaceports,
+    adjacency: Object.fromEntries(Object.entries(adjacency).map(function (_ref3) {
+      var _ref4 = _slicedToArray(_ref3, 2),
+        k = _ref4[0],
+        v = _ref4[1];
+      return [k, _toConsumableArray(v)];
+    })),
+    incidentEdges: incidentEdges
+  };
+}
+function createGame() {
+  var _board$tiles$find$id, _board$tiles$find;
+  var roomId = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : crypto.randomUUID().slice(0, 8);
+  var board = makeBoard(roomId);
+  var neutron = (_board$tiles$find$id = (_board$tiles$find = board.tiles.find(function (tile) {
+    return tile.terrain === "desert";
+  })) === null || _board$tiles$find === void 0 ? void 0 : _board$tiles$find.id) !== null && _board$tiles$find$id !== void 0 ? _board$tiles$find$id : 9;
+  return {
+    id: roomId,
+    board: board,
+    players: PLAYERS.map(function (player) {
+      return _objectSpread(_objectSpread({}, player), {}, {
+        isCpu: false,
+        resources: emptyResources(),
+        hiddenNewFrontiers: [],
+        playedNewFrontiers: [],
+        frontierPlayedTurn: null,
+        playedTv: 0,
+        bonus: {
+          longest: false,
+          largestTv: false
+        }
+      });
+    }),
+    buildings: {},
+    routes: {},
+    deck: shuffle(DEV_DECK, mulberry32(hashString("".concat(roomId, ":deck")))),
+    discard: [],
+    turn: 0,
+    turnCount: 0,
+    phase: "setup",
+    turnStage: "setup",
+    setupStep: 0,
+    setupOrder: [0, 1, 2, 3, 3, 2, 1, 0],
+    setupPendingVertex: null,
+    action: "planet",
+    dice: null,
+    rolled: false,
+    criminalTile: neutron,
+    selectedTile: neutron,
+    negotiation: null,
+    pendingDiscards: {},
+    pendingSteal: null,
+    criminalMover: null,
+    privateMessages: [],
+    log: ["領界の準備が整いました。小都市と領界路を初期配置してください。"],
+    winner: null
+  };
+}
+function canAfford(player, cost) {
+  return Object.entries(cost).every(function (_ref5) {
+    var _ref6 = _slicedToArray(_ref5, 2),
+      key = _ref6[0],
+      amount = _ref6[1];
+    return (player.resources[key] || 0) >= amount;
+  });
+}
+function pay(player, cost) {
+  Object.entries(cost).forEach(function (_ref7) {
+    var _ref8 = _slicedToArray(_ref7, 2),
+      key = _ref8[0],
+      amount = _ref8[1];
+    player.resources[key] -= amount;
+  });
+}
+function resourceText(resources) {
+  return RESOURCE_KEYS.map(function (key) {
+    return "".concat(RESOURCES[key].name).concat(resources[key] || 0);
+  }).join(" / ");
+}
+function visibleResourceText(player, viewerId) {
+  if (player.id === viewerId) return resourceText(player.resources);
+  return "\u8CC7\u6E90 ".concat(totalResources(player.resources), "\u679A");
+}
+function frontierType(card) {
+  return typeof card === "string" ? card : card.type;
+}
+function frontierBoughtTurn(card) {
+  return typeof card === "string" ? -1 : card.boughtTurn;
+}
+function canPlayFrontier(card, state) {
+  return frontierBoughtTurn(card) < state.turnCount;
+}
+function publicPlayedFrontiers(player) {
+  var played = player.playedNewFrontiers || [];
+  if (!played.length) return "使用済みなし";
+  var counts = played.reduce(function (acc, type) {
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
+  return Object.entries(counts).map(function (_ref9) {
+    var _ref0 = _slicedToArray(_ref9, 2),
+      type = _ref0[0],
+      count = _ref0[1];
+    return "".concat(DEV_NAMES[type]).concat(count);
+  }).join(" / ");
+}
+function playerSpaceports(state, playerId) {
+  return state.board.spaceports.filter(function (spaceport) {
+    return spaceport.vertices.some(function (vertexId) {
+      var _state$buildings$vert;
+      return ((_state$buildings$vert = state.buildings[vertexId]) === null || _state$buildings$vert === void 0 ? void 0 : _state$buildings$vert.player) === playerId;
+    });
+  });
+}
+function tradeRateFor(state, playerId, give) {
+  var ports = playerSpaceports(state, playerId);
+  if (ports.some(function (port) {
+    return port.type === give;
+  })) return 2;
+  if (ports.some(function (port) {
+    return port.type === null;
+  })) return 3;
+  return 4;
+}
+function spaceportText(state, playerId) {
+  var ports = playerSpaceports(state, playerId);
+  if (!ports.length) return "次元門なし";
+  return ports.map(function (port) {
+    return spaceportName(port.type);
+  }).join(" / ");
+}
+function currentPlayer(state) {
+  var active = state.phase === "setup" ? state.setupOrder[state.setupStep] : state.turn;
+  return state.players[active];
+}
+function isCpuPlayer(state, playerId) {
+  var _state$players$player;
+  return Boolean((_state$players$player = state.players[playerId]) === null || _state$players$player === void 0 ? void 0 : _state$players$player.isCpu);
+}
+function phaseLabel(state) {
+  if (state.phase === "setup") return "初期配置";
+  if (state.turnStage === "roll") return "サイコロ";
+  if (state.turnStage === "production") return "資源獲得";
+  return "メインフェーズ";
+}
+function isMainPhase(state) {
+  return state.phase === "play" && state.turnStage === "main";
+}
+function numberWeight(number) {
+  return {
+    6: 5,
+    8: 5,
+    5: 4,
+    9: 4,
+    4: 3,
+    10: 3,
+    3: 2,
+    11: 2,
+    2: 1,
+    12: 1
+  }[number] || 0;
+}
+function playerResourceCoverage(state, playerId) {
+  var coverage = new Set();
+  state.board.vertices.forEach(function (vertex) {
+    var building = state.buildings[vertex.id];
+    if ((building === null || building === void 0 ? void 0 : building.player) !== playerId) return;
+    vertex.tiles.forEach(function (tileId) {
+      var terrain = state.board.tiles[tileId].terrain;
+      if (terrain !== "desert") coverage.add(terrain);
+    });
+  });
+  return coverage;
+}
+function vertexScore(state, vertexId, playerId) {
+  var vertex = state.board.vertices.find(function (item) {
+    return item.id === vertexId;
+  });
+  if (!vertex) return -999;
+  var coverage = playerResourceCoverage(state, playerId);
+  var score = 0;
+  vertex.tiles.forEach(function (tileId) {
+    var tile = state.board.tiles[tileId];
+    if (tile.terrain === "desert") return;
+    score += numberWeight(tile.number) * 2;
+    if (!coverage.has(tile.terrain)) score += 3;
+    if (tile.id === state.criminalTile) score -= 2;
+  });
+  if (state.board.spaceports.some(function (spaceport) {
+    return spaceport.vertices.includes(vertexId);
+  })) score += 3;
+  return score;
+}
+function bestPlanetVertex(state, playerId) {
+  var _state$board$vertices;
+  return ((_state$board$vertices = state.board.vertices.filter(function (vertex) {
+    return canBuildPlanet(state, vertex.id, playerId);
+  }).map(function (vertex) {
+    return {
+      id: vertex.id,
+      score: vertexScore(state, vertex.id, playerId)
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  })[0]) === null || _state$board$vertices === void 0 ? void 0 : _state$board$vertices.id) || null;
+}
+function bestStarVertex(state, playerId) {
+  var _state$board$vertices2;
+  return ((_state$board$vertices2 = state.board.vertices.filter(function (vertex) {
+    var _state$buildings$vert2, _state$buildings$vert3;
+    return ((_state$buildings$vert2 = state.buildings[vertex.id]) === null || _state$buildings$vert2 === void 0 ? void 0 : _state$buildings$vert2.player) === playerId && ((_state$buildings$vert3 = state.buildings[vertex.id]) === null || _state$buildings$vert3 === void 0 ? void 0 : _state$buildings$vert3.type) === "planet";
+  }).map(function (vertex) {
+    return {
+      id: vertex.id,
+      score: vertexScore(state, vertex.id, playerId)
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  })[0]) === null || _state$board$vertices2 === void 0 ? void 0 : _state$board$vertices2.id) || null;
+}
+function bestRouteEdge(state, playerId) {
+  var _state$board$edges$fi;
+  var free = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+  return ((_state$board$edges$fi = state.board.edges.filter(function (edge) {
+    return canBuildRoute(state, edge.id, playerId, free);
+  }).map(function (edge) {
+    return {
+      id: edge.id,
+      score: Math.max(vertexScore(state, edge.a, playerId), vertexScore(state, edge.b, playerId)) + (state.phase === "setup" ? 4 : 0)
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  })[0]) === null || _state$board$edges$fi === void 0 ? void 0 : _state$board$edges$fi.id) || null;
+}
+function discardForCpu(player, need) {
+  var bundle = emptyResources();
+  for (var i = 0; i < need; i += 1) {
+    var key = RESOURCE_KEYS.filter(function (resource) {
+      return (player.resources[resource] || 0) - (bundle[resource] || 0) > 0;
+    }).sort(function (a, b) {
+      return (player.resources[b] || 0) - (bundle[b] || 0) - ((player.resources[a] || 0) - (bundle[a] || 0));
+    })[0];
+    if (!key) break;
+    bundle[key] += 1;
+  }
+  return bundle;
+}
+function bestCriminalTile(state, actor) {
+  var _ref1, _candidates$0$id, _candidates$, _state$board$tiles$fi;
+  var leaderIds = state.players.filter(function (player) {
+    return player.id !== actor;
+  }).map(function (player) {
+    return {
+      id: player.id,
+      vp: getVp(state, player.id)
+    };
+  }).sort(function (a, b) {
+    return b.vp - a.vp;
+  }).map(function (entry) {
+    return entry.id;
+  });
+  var candidates = state.board.tiles.filter(function (tile) {
+    return tile.id !== state.criminalTile && tile.terrain !== "desert";
+  }).map(function (tile) {
+    var adjacentPlayers = _toConsumableArray(new Set(tile.corners.map(function (vertexId) {
+      var _state$buildings$vert4;
+      return (_state$buildings$vert4 = state.buildings[vertexId]) === null || _state$buildings$vert4 === void 0 ? void 0 : _state$buildings$vert4.player;
+    }).filter(function (id) {
+      return id !== undefined;
+    })));
+    var hitsOpponent = adjacentPlayers.filter(function (id) {
+      return id !== actor;
+    }).length;
+    var hitsSelf = adjacentPlayers.includes(actor) ? 1 : 0;
+    var leaderBonus = adjacentPlayers.reduce(function (sum, id) {
+      return sum + Math.max(0, 4 - leaderIds.indexOf(id));
+    }, 0);
+    return {
+      id: tile.id,
+      score: numberWeight(tile.number) * 3 + hitsOpponent * 5 + leaderBonus - hitsSelf * 8
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  });
+  return (_ref1 = (_candidates$0$id = (_candidates$ = candidates[0]) === null || _candidates$ === void 0 ? void 0 : _candidates$.id) !== null && _candidates$0$id !== void 0 ? _candidates$0$id : (_state$board$tiles$fi = state.board.tiles.find(function (tile) {
+    return tile.id !== state.criminalTile;
+  })) === null || _state$board$tiles$fi === void 0 ? void 0 : _state$board$tiles$fi.id) !== null && _ref1 !== void 0 ? _ref1 : state.criminalTile;
+}
+function bestStealVictim(state, victimIds) {
+  var _map$sort$0$id, _map$sort$;
+  return (_map$sort$0$id = (_map$sort$ = _toConsumableArray(victimIds).map(function (id) {
+    return {
+      id: id,
+      vp: getVp(state, id),
+      cards: totalResources(state.players[id].resources)
+    };
+  }).sort(function (a, b) {
+    return b.vp - a.vp || b.cards - a.cards;
+  })[0]) === null || _map$sort$ === void 0 ? void 0 : _map$sort$.id) !== null && _map$sort$0$id !== void 0 ? _map$sort$0$id : victimIds[0];
+}
+function findCpuBankTrade(state, playerId, cost) {
+  var player = state.players[playerId];
+  if (canAfford(player, cost)) return null;
+  var deficits = RESOURCE_KEYS.filter(function (key) {
+    return (player.resources[key] || 0) < (cost[key] || 0);
+  });
+  var _iterator = _createForOfIteratorHelper(deficits),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var take = _step.value;
+      var _iterator2 = _createForOfIteratorHelper(RESOURCE_KEYS),
+        _step2;
+      try {
+        var _loop = function _loop() {
+            var give = _step2.value;
+            if (give === take) return 0; // continue
+            var rate = tradeRateFor(state, playerId, give);
+            var afterGive = _objectSpread(_objectSpread({}, player.resources), {}, _defineProperty(_defineProperty({}, give, (player.resources[give] || 0) - rate), take, (player.resources[take] || 0) + 1));
+            if ((player.resources[give] || 0) >= rate && RESOURCE_KEYS.every(function (key) {
+              return (afterGive[key] || 0) >= (cost[key] || 0);
+            })) {
+              return {
+                v: {
+                  give: give,
+                  take: take
+                }
+              };
+            }
+          },
+          _ret;
+        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+          _ret = _loop();
+          if (_ret === 0) continue;
+          if (_ret) return _ret.v;
+        }
+      } catch (err) {
+        _iterator2.e(err);
+      } finally {
+        _iterator2.f();
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return null;
+}
+function bestCpuCollectResource(state, playerId) {
+  var _needOrder$map$sort$;
+  var needOrder = ["rare", "food", "rock", "material", "nano"];
+  return ((_needOrder$map$sort$ = needOrder.map(function (key) {
+    return {
+      key: key,
+      score: state.players.reduce(function (sum, player) {
+        return player.id === playerId ? sum : sum + (player.resources[key] || 0);
+      }, 0)
+    };
+  }).sort(function (a, b) {
+    return b.score - a.score;
+  })[0]) === null || _needOrder$map$sort$ === void 0 ? void 0 : _needOrder$map$sort$.key) || "rare";
+}
+function nextCpuEvent(state) {
+  var _state$criminalMover, _state$pendingSteal;
+  if (state.action === "discard") {
+    var cpuDiscard = pendingDiscardEntries(state).find(function (_ref10) {
+      var _ref11 = _slicedToArray(_ref10, 1),
+        playerId = _ref11[0];
+      return isCpuPlayer(state, Number(playerId));
+    });
+    if (cpuDiscard) {
+      var _playerId = Number(cpuDiscard[0]);
+      return {
+        type: "discardResources",
+        resources: discardForCpu(state.players[_playerId], Number(cpuDiscard[1])),
+        playerId: _playerId
+      };
+    }
+  }
+  var active = currentPlayer(state);
+  if (!(active !== null && active !== void 0 && active.isCpu) || state.winner !== null || state.negotiation) return null;
+  var playerId = active.id;
+  var player = state.players[playerId];
+  if (state.phase === "setup") {
+    if (state.action === "planet") {
+      var vertexId = bestPlanetVertex(state, playerId);
+      return vertexId ? {
+        type: "vertex",
+        vertexId: vertexId,
+        playerId: playerId
+      } : null;
+    }
+    if (state.action === "route") {
+      var edgeId = bestRouteEdge(state, playerId);
+      return edgeId ? {
+        type: "edge",
+        edgeId: edgeId,
+        playerId: playerId
+      } : null;
+    }
+  }
+  if (state.phase !== "play" || state.turn !== playerId) return null;
+  if (state.action === "discard") {
+    var _state$pendingDiscard;
+    var need = Number(((_state$pendingDiscard = state.pendingDiscards) === null || _state$pendingDiscard === void 0 ? void 0 : _state$pendingDiscard[playerId]) || 0);
+    if (need > 0) return {
+      type: "discardResources",
+      resources: discardForCpu(player, need),
+      playerId: playerId
+    };
+    return null;
+  }
+  if (state.action === "criminal" && ((_state$criminalMover = state.criminalMover) !== null && _state$criminalMover !== void 0 ? _state$criminalMover : playerId) === playerId) {
+    return {
+      type: "selectTile",
+      tileId: bestCriminalTile(state, playerId),
+      playerId: playerId
+    };
+  }
+  if (state.action === "steal" && ((_state$pendingSteal = state.pendingSteal) === null || _state$pendingSteal === void 0 ? void 0 : _state$pendingSteal.thief) === playerId) {
+    return {
+      type: "stealResource",
+      victimId: bestStealVictim(state, state.pendingSteal.victims),
+      playerId: playerId
+    };
+  }
+  if (!state.rolled) return {
+    type: "roll",
+    playerId: playerId
+  };
+  if (!isMainPhase(state)) return null;
+  var playable = player.hiddenNewFrontiers.find(function (card) {
+    return frontierType(card) !== "point" && canPlayFrontier(card, state);
+  });
+  if (playable && player.frontierPlayedTurn !== state.turnCount) {
+    var type = frontierType(playable);
+    if (type === "tv") return {
+      type: "playDev",
+      card: "tv",
+      playerId: playerId
+    };
+    if (type === "collect") return {
+      type: "playDev",
+      card: "collect",
+      resource: bestCpuCollectResource(state, playerId),
+      playerId: playerId
+    };
+    if (type === "plenty") return {
+      type: "playDev",
+      card: "plenty",
+      a: "rare",
+      b: "food",
+      playerId: playerId
+    };
+    if (type === "route" && bestRouteEdge(state, playerId, true)) return {
+      type: "playDev",
+      card: "route",
+      playerId: playerId
+    };
+  }
+  if (state.action === "freeRoute") {
+    var _edgeId = bestRouteEdge(state, playerId, true);
+    return _edgeId ? {
+      type: "edge",
+      edgeId: _edgeId,
+      free: true,
+      playerId: playerId
+    } : {
+      type: "setAction",
+      action: "build",
+      playerId: playerId
+    };
+  }
+  var starId = bestStarVertex(state, playerId);
+  if (starId && canAfford(player, COSTS.star)) return {
+    type: "setAction",
+    action: "star",
+    playerId: playerId,
+    follow: {
+      type: "vertex",
+      vertexId: starId,
+      playerId: playerId
+    }
+  };
+  var planetId = bestPlanetVertex(state, playerId);
+  if (planetId && canAfford(player, COSTS.planet)) return {
+    type: "setAction",
+    action: "planet",
+    playerId: playerId,
+    follow: {
+      type: "vertex",
+      vertexId: planetId,
+      playerId: playerId
+    }
+  };
+  var routeId = bestRouteEdge(state, playerId);
+  if (routeId && canAfford(player, COSTS.route)) return {
+    type: "setAction",
+    action: "route",
+    playerId: playerId,
+    follow: {
+      type: "edge",
+      edgeId: routeId,
+      playerId: playerId
+    }
+  };
+  if (canAfford(player, COSTS.frontier) && state.deck.length) return {
+    type: "buyDev",
+    playerId: playerId
+  };
+  var tradeTarget = [COSTS.star, COSTS.planet, COSTS.route, COSTS.frontier].map(function (cost) {
+    return findCpuBankTrade(state, playerId, cost);
+  }).find(Boolean);
+  if (tradeTarget) return _objectSpread(_objectSpread({
+    type: "bankTrade"
+  }, tradeTarget), {}, {
+    playerId: playerId
+  });
+  return {
+    type: "endTurn",
+    playerId: playerId
+  };
+}
+function addLog(state, text) {
+  state.log = [text].concat(_toConsumableArray(state.log)).slice(0, 8);
+}
+function addPrivateMessage(state, playerId, text) {
+  state.privateMessages = [{
+    to: playerId,
+    text: text
+  }].concat(_toConsumableArray(state.privateMessages || [])).slice(0, 16);
+}
+function discardRequirement(player) {
+  var total = totalResources(player.resources);
+  return total >= 8 ? Math.floor(total / 2) : 0;
+}
+function pendingDiscardEntries(state) {
+  return Object.entries(state.pendingDiscards || {}).filter(function (_ref12) {
+    var _ref13 = _slicedToArray(_ref12, 2),
+      value = _ref13[1];
+    return value > 0;
+  });
+}
+function adjacentStealVictims(state, tileId, thiefId) {
+  var tile = state.board.tiles[tileId];
+  if (!tile) return [];
+  return _toConsumableArray(new Set(tile.corners.map(function (vertexId) {
+    var _state$buildings$vert5;
+    return (_state$buildings$vert5 = state.buildings[vertexId]) === null || _state$buildings$vert5 === void 0 ? void 0 : _state$buildings$vert5.player;
+  }).filter(function (playerId) {
+    return playerId !== undefined && playerId !== thiefId && totalResources(state.players[playerId].resources) > 0;
+  })));
+}
+function randomResourceKey(resources) {
+  var pool = RESOURCE_KEYS.flatMap(function (key) {
+    return Array(Number(resources[key] || 0)).fill(key);
+  });
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+}
+function startCriminalMove(state, actor) {
+  state.action = "criminal";
+  state.turnStage = "production";
+  state.criminalMover = actor;
+  state.selectedTile = state.criminalTile;
+}
+function finishCriminalMove(state, actor, tileId) {
+  if (tileId === state.criminalTile) return false;
+  state.criminalTile = tileId;
+  addLog(state, "\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u304C".concat(tileName(state.board.tiles[tileId]), "\u3078\u79FB\u52D5\u3057\u307E\u3057\u305F\u3002"));
+  var victims = adjacentStealVictims(state, tileId, actor);
+  if (victims.length) {
+    state.pendingSteal = {
+      thief: actor,
+      victims: victims
+    };
+    state.action = "steal";
+    addLog(state, "".concat(state.players[actor].name, " \u304C\u596A\u3046\u76F8\u624B\u3092\u9078\u3073\u307E\u3059\u3002"));
+  } else {
+    state.pendingSteal = null;
+    state.criminalMover = null;
+    if (state.rolled) {
+      state.turnStage = "main";
+      state.action = "build";
+    } else {
+      state.turnStage = "roll";
+      state.action = "roll";
+    }
+  }
+  return true;
+}
+function getVp(state, playerId) {
+  var planets = Object.values(state.buildings).filter(function (b) {
+    return b.player === playerId && b.type === "planet";
+  }).length;
+  var stars = Object.values(state.buildings).filter(function (b) {
+    return b.player === playerId && b.type === "star";
+  }).length;
+  var points = state.players[playerId].hiddenNewFrontiers.filter(function (card) {
+    return frontierType(card) === "point";
+  }).length;
+  var publicPoints = (state.players[playerId].playedNewFrontiers || []).filter(function (card) {
+    return card === "point";
+  }).length;
+  var bonus = (state.players[playerId].bonus.longest ? 2 : 0) + (state.players[playerId].bonus.largestTv ? 2 : 0);
+  return planets + stars * 2 + points + publicPoints + bonus;
+}
+function distanceRule(state, vertexId) {
+  return !state.board.adjacency[vertexId].some(function (next) {
+    return state.buildings[next];
+  });
+}
+function routeTouchesOwnNetwork(state, edge, playerId) {
+  return [edge.a, edge.b].some(function (vertexId) {
+    var building = state.buildings[vertexId];
+    if ((building === null || building === void 0 ? void 0 : building.player) === playerId) return true;
+    if (building && building.player !== playerId) return false;
+    return state.board.incidentEdges[vertexId].some(function (edgeId) {
+      var _state$routes$edgeId;
+      return ((_state$routes$edgeId = state.routes[edgeId]) === null || _state$routes$edgeId === void 0 ? void 0 : _state$routes$edgeId.player) === playerId;
+    });
+  });
+}
+function canBuildRoute(state, edgeId, playerId) {
+  var free = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+  if (state.routes[edgeId]) return false;
+  if (countRoutes(state, playerId) >= BUILD_LIMITS.route) return false;
+  var edge = state.board.edges.find(function (item) {
+    return item.id === edgeId;
+  });
+  if (!edge) return false;
+  if (state.phase === "setup") return state.setupPendingVertex && [edge.a, edge.b].includes(state.setupPendingVertex);
+  return (free || canAfford(state.players[playerId], COSTS.route)) && routeTouchesOwnNetwork(state, edge, playerId);
+}
+function canBuildPlanet(state, vertexId, playerId) {
+  if (state.buildings[vertexId] || !distanceRule(state, vertexId)) return false;
+  if (countBuildings(state, playerId, "planet") >= BUILD_LIMITS.planet) return false;
+  if (state.phase === "setup") return !state.setupPendingVertex;
+  if (!canAfford(state.players[playerId], COSTS.planet)) return false;
+  return state.board.incidentEdges[vertexId].some(function (edgeId) {
+    var _state$routes$edgeId2;
+    return ((_state$routes$edgeId2 = state.routes[edgeId]) === null || _state$routes$edgeId2 === void 0 ? void 0 : _state$routes$edgeId2.player) === playerId;
+  });
+}
+function countBuildings(state, playerId, type) {
+  return Object.values(state.buildings).filter(function (building) {
+    return building.player === playerId && building.type === type;
+  }).length;
+}
+function countRoutes(state, playerId) {
+  return Object.values(state.routes).filter(function (route) {
+    return route.player === playerId;
+  }).length;
+}
+function isBlockedVertex(state, vertexId, playerId) {
+  var building = state.buildings[vertexId];
+  return building && building.player !== playerId;
+}
+function longestRouteLength(state, playerId) {
+  var ownEdges = new Set(Object.entries(state.routes).filter(function (_ref14) {
+    var _ref15 = _slicedToArray(_ref14, 2),
+      route = _ref15[1];
+    return route.player === playerId;
+  }).map(function (_ref16) {
+    var _ref17 = _slicedToArray(_ref16, 1),
+      edgeId = _ref17[0];
+    return edgeId;
+  }));
+  if (!ownEdges.size) return 0;
+  var edgeById = Object.fromEntries(state.board.edges.map(function (edge) {
+    return [edge.id, edge];
+  }));
+  function walk(vertexId, used) {
+    if (isBlockedVertex(state, vertexId, playerId)) return 0;
+    var best = 0;
+    var _iterator3 = _createForOfIteratorHelper(state.board.incidentEdges[vertexId] || []),
+      _step3;
+    try {
+      for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+        var edgeId = _step3.value;
+        if (!ownEdges.has(edgeId) || used.has(edgeId)) continue;
+        var edge = edgeById[edgeId];
+        var nextVertex = edge.a === vertexId ? edge.b : edge.a;
+        var nextUsed = new Set(used);
+        nextUsed.add(edgeId);
+        best = Math.max(best, 1 + walk(nextVertex, nextUsed));
+      }
+    } catch (err) {
+      _iterator3.e(err);
+    } finally {
+      _iterator3.f();
+    }
+    return best;
+  }
+  var best = 0;
+  var _iterator4 = _createForOfIteratorHelper(ownEdges),
+    _step4;
+  try {
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+      var edgeId = _step4.value;
+      var edge = edgeById[edgeId];
+      best = Math.max(best, 1 + walk(edge.a, new Set([edgeId])), 1 + walk(edge.b, new Set([edgeId])));
+    }
+  } catch (err) {
+    _iterator4.e(err);
+  } finally {
+    _iterator4.f();
+  }
+  return best;
+}
+function refreshBonuses(state) {
+  var currentLongest = state.players.find(function (player) {
+    return player.bonus.longest;
+  });
+  var currentTv = state.players.find(function (player) {
+    return player.bonus.largestTv;
+  });
+  var currentLongestLength = currentLongest ? longestRouteLength(state, currentLongest.id) : 4;
+  var currentTvCount = currentTv ? currentTv.playedTv : 2;
+  if (currentLongest && currentLongestLength < 5) {
+    currentLongest.bonus.longest = false;
+  }
+  var routeLeader = state.players.map(function (player) {
+    return {
+      id: player.id,
+      length: longestRouteLength(state, player.id)
+    };
+  }).filter(function (entry) {
+    return entry.length >= 5 && entry.length > (currentLongestLength >= 5 ? currentLongestLength : 4);
+  }).sort(function (a, b) {
+    return b.length - a.length;
+  })[0];
+  var tvLeader = state.players.map(function (player) {
+    return {
+      id: player.id,
+      count: player.playedTv
+    };
+  }).filter(function (entry) {
+    return entry.count >= 3 && entry.count > currentTvCount;
+  }).sort(function (a, b) {
+    return b.count - a.count;
+  })[0];
+  if (routeLeader) {
+    state.players.forEach(function (player) {
+      player.bonus.longest = player.id === routeLeader.id;
+    });
+  }
+  if (tvLeader) {
+    state.players.forEach(function (player) {
+      player.bonus.largestTv = player.id === tvLeader.id;
+    });
+  }
+}
+function produce(state, total) {
+  state.turnStage = "production";
+  if (total === 7) {
+    var pending = Object.fromEntries(state.players.map(function (player) {
+      return [player.id, discardRequirement(player)];
+    }).filter(function (_ref18) {
+      var _ref19 = _slicedToArray(_ref18, 2),
+        need = _ref19[1];
+      return need > 0;
+    }));
+    state.pendingDiscards = pending;
+    if (pendingDiscardEntries(state).length) {
+      state.action = "discard";
+      addLog(state, "7が出ました。資源8枚以上のプレイヤーは半分を捨てます。");
+    } else {
+      addLog(state, "7が出ました。ラヴェジャーズを任意のタイルへ移動できます。");
+      startCriminalMove(state, state.turn);
+    }
+    return;
+  }
+  var gained = [];
+  state.board.tiles.forEach(function (tile) {
+    if (tile.number !== total || tile.id === state.criminalTile || tile.terrain === "desert") return;
+    tile.corners.forEach(function (vertexId) {
+      var building = state.buildings[vertexId];
+      if (!building) return;
+      var amount = building.type === "star" ? 2 : 1;
+      addRes(state.players[building.player].resources, tile.terrain, amount);
+      gained.push("".concat(state.players[building.player].name, "+").concat(RESOURCES[tile.terrain].name).concat(amount));
+    });
+  });
+  addLog(state, gained.length ? "\u7523\u51FA ".concat(total, ": ").concat(gained.join(", ")) : "\u7523\u51FA ".concat(total, ": \u4F55\u3082\u751F\u307E\u308C\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+  state.turnStage = "main";
+}
+function moveTurn(state) {
+  refreshBonuses(state);
+  var winner = state.players.find(function (player) {
+    return getVp(state, player.id) >= 10;
+  });
+  if (winner) {
+    state.winner = winner.id;
+    addLog(state, "".concat(winner.name, " \u304C10\u70B9\u306B\u5230\u9054\u3057\u307E\u3057\u305F\u3002"));
+    return;
+  }
+  state.turn = (state.turn + 1) % 4;
+  state.turnCount = (state.turnCount || 0) + 1;
+  state.rolled = false;
+  state.dice = null;
+  state.turnStage = "roll";
+  state.action = "roll";
+  addLog(state, "".concat(state.players[state.turn].name, " \u306E\u30BF\u30FC\u30F3\u3067\u3059\u3002"));
+}
+function reducer(state, event) {
+  var _event$playerId;
+  var next = structuredClone(state);
+  var actor = (_event$playerId = event.playerId) !== null && _event$playerId !== void 0 ? _event$playerId : currentPlayer(next).id;
+  var player = next.players[actor];
+  if (next.winner && event.type !== "reset") return next;
+  if (event.type === "reset") return createGame(event.roomId || crypto.randomUUID().slice(0, 8));
+  if (event.type === "rename") {
+    next.players[actor].name = event.name.slice(0, 18) || "Player ".concat(actor + 1);
+    return next;
+  }
+  if (event.type === "setCpu") {
+    var targetId = Number(event.targetId);
+    var target = next.players[targetId];
+    if (!target) return next;
+    target.isCpu = Boolean(event.isCpu);
+    if (target.isCpu) {
+      target.name = target.name.startsWith("CPU") ? target.name : "CPU ".concat(String.fromCharCode(65 + targetId));
+      addLog(next, "".concat(target.name, " \u304CCPU\u3068\u3057\u3066\u53C2\u52A0\u3057\u307E\u3059\u3002"));
+    } else {
+      target.name = target.name.startsWith("CPU") ? "Player ".concat(targetId + 1) : target.name;
+      addLog(next, "".concat(target.name, " \u304C\u30D7\u30EC\u30A4\u30E4\u30FC\u67A0\u306B\u623B\u308A\u307E\u3057\u305F\u3002"));
+    }
+    return next;
+  }
+  if (event.type === "setAction") {
+    if (["discard", "steal"].includes(next.action)) return next;
+    next.action = event.action;
+    return next;
+  }
+  if (event.type === "selectTile") {
+    next.selectedTile = event.tileId;
+    if (next.action === "criminal") {
+      var _next$criminalMover;
+      if (event.tileId === next.criminalTile) return next;
+      finishCriminalMove(next, (_next$criminalMover = next.criminalMover) !== null && _next$criminalMover !== void 0 ? _next$criminalMover : actor, event.tileId);
+    }
+    return next;
+  }
+  if (event.type === "discardResources") {
+    var _next$pendingDiscards;
+    var need = Number(((_next$pendingDiscards = next.pendingDiscards) === null || _next$pendingDiscards === void 0 ? void 0 : _next$pendingDiscards[actor]) || 0);
+    var bundle = cleanBundle(event.resources || {});
+    if (!need || totalResources(bundle) !== need || !hasResources(player, bundle)) return next;
+    RESOURCE_KEYS.forEach(function (key) {
+      player.resources[key] -= bundle[key] || 0;
+    });
+    delete next.pendingDiscards[actor];
+    addLog(next, "".concat(player.name, " \u304C\u8CC7\u6E90").concat(need, "\u679A\u3092\u6368\u3066\u307E\u3057\u305F\u3002"));
+    if (!pendingDiscardEntries(next).length) {
+      next.pendingDiscards = {};
+      addLog(next, "全員の廃棄が完了しました。ラヴェジャーズを移動してください。");
+      startCriminalMove(next, next.turn);
+    } else {
+      next.turnStage = "production";
+    }
+    return next;
+  }
+  if (event.type === "stealResource") {
+    var pending = next.pendingSteal;
+    var victimId = Number(event.victimId);
+    if (!pending || actor !== pending.thief || !pending.victims.includes(victimId)) return next;
+    var victim = next.players[victimId];
+    var stolen = randomResourceKey(victim.resources);
+    if (!stolen) return next;
+    victim.resources[stolen] -= 1;
+    next.players[actor].resources[stolen] += 1;
+    addLog(next, "".concat(next.players[actor].name, " \u304C ").concat(victim.name, " \u304B\u3089\u8CC7\u6E901\u679A\u3092\u596A\u3044\u307E\u3057\u305F\u3002"));
+    addPrivateMessage(next, actor, "".concat(victim.name, " \u304B\u3089 ").concat(RESOURCES[stolen].name, " \u3092\u596A\u3044\u307E\u3057\u305F\u3002"));
+    addPrivateMessage(next, victimId, "".concat(next.players[actor].name, " \u306B ").concat(RESOURCES[stolen].name, " \u3092\u596A\u308F\u308C\u307E\u3057\u305F\u3002"));
+    next.pendingSteal = null;
+    next.criminalMover = null;
+    next.turnStage = next.rolled ? "main" : "roll";
+    next.action = next.rolled ? "build" : "roll";
+    return next;
+  }
+  if (event.type === "roll") {
+    if (actor !== next.turn || next.rolled || next.phase !== "play") return next;
+    var d1 = Math.floor(Math.random() * 6) + 1;
+    var d2 = Math.floor(Math.random() * 6) + 1;
+    next.dice = [d1, d2];
+    next.rolled = true;
+    produce(next, d1 + d2);
+    if (next.turnStage === "main") next.action = "build";
+    return next;
+  }
+  if (event.type === "vertex") {
+    var vertexId = event.vertexId;
+    if (next.phase === "setup") {
+      var active = next.setupOrder[next.setupStep];
+      if (actor !== active || next.action !== "planet" || !canBuildPlanet(next, vertexId, actor)) return next;
+      next.buildings[vertexId] = {
+        player: actor,
+        type: "planet"
+      };
+      next.setupPendingVertex = vertexId;
+      next.action = "route";
+      addLog(next, "".concat(player.name, " \u304C\u5C0F\u90FD\u5E02\u3092\u914D\u7F6E\u3057\u307E\u3057\u305F\u3002\u9818\u754C\u8DEF\u3092\u63A5\u7D9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
+      return next;
+    }
+    if (actor !== next.turn || !isMainPhase(next)) return next;
+    if (next.action === "planet" && canBuildPlanet(next, vertexId, actor)) {
+      pay(player, COSTS.planet);
+      next.buildings[vertexId] = {
+        player: actor,
+        type: "planet"
+      };
+      addLog(next, "".concat(player.name, " \u304C\u5C0F\u90FD\u5E02\u3092\u5EFA\u8A2D\u3057\u307E\u3057\u305F\u3002"));
+    } else if (next.action === "star") {
+      var building = next.buildings[vertexId];
+      if ((building === null || building === void 0 ? void 0 : building.player) === actor && building.type === "planet" && countBuildings(next, actor, "star") < BUILD_LIMITS.star && canAfford(player, COSTS.star)) {
+        pay(player, COSTS.star);
+        building.type = "star";
+        addLog(next, "".concat(player.name, " \u304C\u5C0F\u90FD\u5E02\u3092\u5927\u90FD\u5E02\u3078\u5F37\u5316\u3057\u307E\u3057\u305F\u3002"));
+      }
+    }
+    refreshBonuses(next);
+    return next;
+  }
+  if (event.type === "edge") {
+    var edgeId = event.edgeId;
+    var free = event.free || next.action === "freeRoute";
+    if (next.phase === "setup") {
+      var _active = next.setupOrder[next.setupStep];
+      if (actor !== _active || next.action !== "route" || !canBuildRoute(next, edgeId, actor)) return next;
+      next.routes[edgeId] = {
+        player: actor
+      };
+      if (next.setupStep >= 4) {
+        var _next$board$vertices$;
+        (_next$board$vertices$ = next.board.vertices.find(function (v) {
+          return v.id === next.setupPendingVertex;
+        })) === null || _next$board$vertices$ === void 0 || _next$board$vertices$.tiles.forEach(function (tileId) {
+          addRes(player.resources, next.board.tiles[tileId].terrain, 1);
+        });
+      }
+      next.setupPendingVertex = null;
+      next.setupStep += 1;
+      if (next.setupStep >= next.setupOrder.length) {
+        next.phase = "play";
+        next.turn = 0;
+        next.rolled = false;
+        next.turnStage = "roll";
+        next.action = "roll";
+        addLog(next, "初期配置完了。最初のプレイヤーからサイコロを振ります。");
+      } else {
+        next.action = "planet";
+        addLog(next, "".concat(next.players[next.setupOrder[next.setupStep]].name, " \u304C\u5C0F\u90FD\u5E02\u3092\u914D\u7F6E\u3057\u307E\u3059\u3002"));
+      }
+      return next;
+    }
+    if (actor !== next.turn || !isMainPhase(next) || !canBuildRoute(next, edgeId, actor, free)) return next;
+    if (!free) pay(player, COSTS.route);
+    next.routes[edgeId] = {
+      player: actor
+    };
+    if (next.action === "freeRoute") {
+      next.freeRoutesLeft = Math.max(0, (next.freeRoutesLeft || 1) - 1);
+      if (next.freeRoutesLeft === 0) next.action = "build";
+    }
+    addLog(next, "".concat(player.name, " \u304C\u9818\u754C\u8DEF\u3092\u5EFA\u8A2D\u3057\u307E\u3057\u305F\u3002"));
+    refreshBonuses(next);
+    return next;
+  }
+  if (event.type === "buyDev") {
+    if (actor !== next.turn || !isMainPhase(next) || !canAfford(player, COSTS.frontier) || next.deck.length === 0) return next;
+    pay(player, COSTS.frontier);
+    var card = next.deck.pop();
+    player.hiddenNewFrontiers.push({
+      type: card,
+      boughtTurn: next.turnCount || 0
+    });
+    addLog(next, "".concat(player.name, " \u304C\u672A\u77E5\u3078\u306E\u65C5\u3092\u7372\u5F97\u3057\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "playDev") {
+    if (player.frontierPlayedTurn === next.turnCount) return next;
+    var cardIndex = player.hiddenNewFrontiers.findIndex(function (card) {
+      return frontierType(card) === event.card && canPlayFrontier(card, next);
+    });
+    if (actor !== next.turn || !isMainPhase(next) || cardIndex < 0) return next;
+    var _card = player.hiddenNewFrontiers.splice(cardIndex, 1)[0];
+    var type = frontierType(_card);
+    player.playedNewFrontiers = player.playedNewFrontiers || [];
+    player.playedNewFrontiers.push(type);
+    player.frontierPlayedTurn = next.turnCount;
+    next.discard.push(type);
+    if (type === "point") {
+      addLog(next, "".concat(player.name, " \u304C\u52DD\u5229\u8A18\u9332\u3092\u516C\u958B\u3057\u307E\u3057\u305F\u3002"));
+    }
+    if (type === "tv") {
+      player.playedTv += 1;
+      startCriminalMove(next, actor);
+      addLog(next, "".concat(player.name, " \u304CTVA\u3092\u8D77\u52D5\u3002\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u79FB\u52D5\u3057\u307E\u3059\u3002"));
+    }
+    if (type === "route") {
+      next.action = "freeRoute";
+      next.freeRoutesLeft = 2;
+      addLog(next, "".concat(player.name, " \u304C\u9818\u754C\u8DEF\u958B\u901A\u3092\u5B9F\u884C\u3002\u7121\u6599\u30672\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002"));
+    }
+    if (type === "collect") {
+      var key = event.resource || RESOURCE_KEYS[0];
+      var total = 0;
+      next.players.forEach(function (other) {
+        if (other.id === actor) return;
+        total += other.resources[key] || 0;
+        other.resources[key] = 0;
+      });
+      player.resources[key] += total;
+      addLog(next, "".concat(player.name, " \u304C\u62BC\u53CE\u3067").concat(RESOURCES[key].name).concat(total, "\u3092\u96C6\u3081\u307E\u3057\u305F\u3002"));
+    }
+    if (type === "plenty") {
+      addRes(player.resources, event.a || "rock", 1);
+      addRes(player.resources, event.b || "material", 1);
+      addLog(next, "".concat(player.name, " \u304C\u88DC\u7D66\u885B\u661F\u304B\u3089\u8CC7\u6E90\u3092\u53D7\u3051\u53D6\u308A\u307E\u3057\u305F\u3002"));
+    }
+    refreshBonuses(next);
+    return next;
+  }
+  if (event.type === "bankTrade") {
+    var rate = tradeRateFor(next, actor, event.give);
+    if (actor !== next.turn || !isMainPhase(next) || (player.resources[event.give] || 0) < rate) return next;
+    player.resources[event.give] -= rate;
+    player.resources[event.take] += 1;
+    addLog(next, "".concat(player.name, " \u304C").concat(rate, ":1\u901A\u4FE1\u4EA4\u6613\u3092\u884C\u3044\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "startNegotiation") {
+    var offer = {
+      turnGives: cleanBundle(event.turnGives),
+      partnerGives: cleanBundle(event.partnerGives)
+    };
+    var partnerId = Number(event.partnerId);
+    if (actor !== next.turn || !isMainPhase(next) || next.negotiation || partnerId === actor || !next.players[partnerId]) return next;
+    if (isCpuPlayer(next, actor) || isCpuPlayer(next, partnerId)) return next;
+    if (!canPlayerOffer(next, partnerId, offer)) return next;
+    next.negotiation = {
+      id: crypto.randomUUID(),
+      turnPlayer: actor,
+      partner: partnerId,
+      offeredBy: actor,
+      awaiting: partnerId,
+      currentOffer: offer,
+      usedCombos: [offerSignature(offer)],
+      history: ["".concat(next.players[actor].name, " \u304C ").concat(next.players[partnerId].name, " \u306B\u4EA4\u63DB\u3092\u7533\u3057\u51FA\u307E\u3057\u305F\u3002")]
+    };
+    addLog(next, "".concat(next.players[actor].name, " \u304C\u516C\u958B\u4EA4\u6E09\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "counterNegotiation") {
+    var negotiation = next.negotiation;
+    if (!negotiation || actor !== negotiation.awaiting) return next;
+    if (isCpuPlayer(next, actor)) return next;
+    var _offer = {
+      turnGives: cleanBundle(event.turnGives),
+      partnerGives: cleanBundle(event.partnerGives)
+    };
+    if (!canPlayerOffer(next, negotiation.partner, _offer)) return next;
+    negotiation.currentOffer = _offer;
+    negotiation.offeredBy = actor;
+    negotiation.awaiting = actor === negotiation.turnPlayer ? negotiation.partner : negotiation.turnPlayer;
+    negotiation.usedCombos = _toConsumableArray(new Set([].concat(_toConsumableArray(negotiation.usedCombos), [offerSignature(_offer)])));
+    negotiation.history = ["".concat(next.players[actor].name, " \u304C\u6761\u4EF6\u5909\u66F4\u3092\u63D0\u793A\u3057\u307E\u3057\u305F\u3002")].concat(_toConsumableArray(negotiation.history)).slice(0, 8);
+    return next;
+  }
+  if (event.type === "interveneNegotiation") {
+    var _negotiation = next.negotiation;
+    if (!_negotiation || actor === _negotiation.turnPlayer || actor === _negotiation.partner) return next;
+    if (isCpuPlayer(next, actor)) return next;
+    var _offer2 = {
+      turnGives: cleanBundle(event.turnGives),
+      partnerGives: cleanBundle(event.partnerGives)
+    };
+    if (!canPlayerOffer(next, actor, _offer2) || !isBetterOffer(_offer2, _negotiation.currentOffer, _negotiation.usedCombos)) return next;
+    var previousPartner = _negotiation.partner;
+    _negotiation.partner = actor;
+    _negotiation.offeredBy = actor;
+    _negotiation.awaiting = _negotiation.turnPlayer;
+    _negotiation.decision = null;
+    _negotiation.currentOffer = _offer2;
+    _negotiation.usedCombos = _toConsumableArray(new Set([].concat(_toConsumableArray(_negotiation.usedCombos), [offerSignature(_offer2)])));
+    _negotiation.history = ["".concat(next.players[actor].name, " \u304C ").concat(next.players[previousPartner].name, " \u3088\u308A\u6709\u5229\u306A\u6761\u4EF6\u3067\u4ECB\u5165\u3057\u307E\u3057\u305F\u3002")].concat(_toConsumableArray(_negotiation.history)).slice(0, 8);
+    addLog(next, "".concat(next.players[actor].name, " \u304C\u516C\u958B\u4EA4\u6E09\u306B\u4ECB\u5165\u3057\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "acceptNegotiation") {
+    var _negotiation2 = next.negotiation;
+    if (!_negotiation2 || _negotiation2.decision || actor !== _negotiation2.awaiting) return next;
+    if (isCpuPlayer(next, actor)) return next;
+    if (!canPlayerOffer(next, _negotiation2.partner, _negotiation2.currentOffer)) return next;
+    _negotiation2.decision = {
+      type: "accepted",
+      by: actor
+    };
+    _negotiation2.awaiting = null;
+    _negotiation2.history = ["".concat(next.players[actor].name, " \u304C\u4EA4\u63DB\u3092\u53D7\u3051\u5165\u308C\u307E\u3057\u305F\u3002\u4ECB\u5165\u304C\u306A\u3051\u308C\u3070\u78BA\u5B9A\u3067\u304D\u307E\u3059\u3002")].concat(_toConsumableArray(_negotiation2.history)).slice(0, 8);
+    addLog(next, "".concat(next.players[actor].name, " \u304C\u4EA4\u63DB\u3092\u53D7\u3051\u5165\u308C\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "rejectNegotiation") {
+    var _negotiation3 = next.negotiation;
+    if (!_negotiation3 || _negotiation3.decision || actor !== _negotiation3.awaiting) return next;
+    if (isCpuPlayer(next, actor)) return next;
+    _negotiation3.decision = {
+      type: "rejected",
+      by: actor
+    };
+    _negotiation3.awaiting = null;
+    _negotiation3.history = ["".concat(next.players[actor].name, " \u304C\u4EA4\u63DB\u3092\u62D2\u5426\u3057\u307E\u3057\u305F\u3002\u4ECB\u5165\u304C\u306A\u3051\u308C\u3070\u7D42\u4E86\u3067\u304D\u307E\u3059\u3002")].concat(_toConsumableArray(_negotiation3.history)).slice(0, 8);
+    addLog(next, "".concat(next.players[actor].name, " \u304C\u4EA4\u63DB\u3092\u62D2\u5426\u3057\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "finalizeNegotiation") {
+    var _negotiation4 = next.negotiation;
+    if (!_negotiation4 || !_negotiation4.decision || actor !== _negotiation4.turnPlayer) return next;
+    if (_negotiation4.decision.type === "accepted") {
+      if (!canPlayerOffer(next, _negotiation4.partner, _negotiation4.currentOffer)) return next;
+      var turnPlayer = next.players[_negotiation4.turnPlayer];
+      var partner = next.players[_negotiation4.partner];
+      moveResources(turnPlayer, partner, _negotiation4.currentOffer.turnGives);
+      moveResources(partner, turnPlayer, _negotiation4.currentOffer.partnerGives);
+      addLog(next, "".concat(turnPlayer.name, " \u3068 ").concat(partner.name, " \u306E\u4EA4\u63DB\u304C\u78BA\u5B9A\u3057\u307E\u3057\u305F\u3002"));
+    } else {
+      addLog(next, "公開交渉が終了しました。");
+    }
+    next.negotiation = null;
+    return next;
+  }
+  if (event.type === "endTurn") {
+    if (next.negotiation) return next;
+    if (actor === next.turn && next.phase === "play") moveTurn(next);
+    return next;
+  }
+  return next;
+}
+function tileName(tile) {
+  if (tile.terrain === "desert") return "ヴォイド";
+  return RESOURCES[tile.terrain].terrain;
+}
+function Cost(_ref20) {
+  var cost = _ref20.cost;
+  return /*#__PURE__*/React.createElement("span", {
+    className: "cost"
+  }, Object.entries(cost).map(function (_ref21) {
+    var _ref22 = _slicedToArray(_ref21, 2),
+      key = _ref22[0],
+      value = _ref22[1];
+    return /*#__PURE__*/React.createElement("span", {
+      key: key,
+      style: {
+        "--dot": RESOURCES[key].color
+      }
+    }, RESOURCES[key].name, " ", value);
+  }));
+}
+function ResourceBundleInput(_ref23) {
+  var title = _ref23.title,
+    value = _ref23.value,
+    _onChange = _ref23.onChange;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "bundleInput"
+  }, /*#__PURE__*/React.createElement("h3", null, title), RESOURCE_KEYS.map(function (key) {
+    return /*#__PURE__*/React.createElement("label", {
+      key: key
+    }, /*#__PURE__*/React.createElement("span", null, RESOURCES[key].name), /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: "0",
+      max: "19",
+      value: value[key] || 0,
+      onChange: function onChange(event) {
+        return _onChange(_objectSpread(_objectSpread({}, value), {}, _defineProperty({}, key, Math.max(0, Number(event.target.value || 0)))));
+      }
+    }));
+  }));
+}
+function emptyBundle() {
+  return emptyResources(0);
+}
+function NegotiationPanel(_ref24) {
+  var _humanPartners$0$id, _humanPartners$, _state$players$select;
+  var state = _ref24.state,
+    myPlayerId = _ref24.myPlayerId,
+    onEvent = _ref24.onEvent;
+  var _useState = useState((myPlayerId + 1) % 4),
+    _useState2 = _slicedToArray(_useState, 2),
+    partnerId = _useState2[0],
+    setPartnerId = _useState2[1];
+  var _useState3 = useState(emptyBundle),
+    _useState4 = _slicedToArray(_useState3, 2),
+    turnGives = _useState4[0],
+    setTurnGives = _useState4[1];
+  var _useState5 = useState(emptyBundle),
+    _useState6 = _slicedToArray(_useState5, 2),
+    partnerGives = _useState6[0],
+    setPartnerGives = _useState6[1];
+  var negotiation = state.negotiation;
+  var me = state.players[myPlayerId];
+  var isTurnPlayer = myPlayerId === state.turn;
+  var draftOffer = {
+    turnGives: cleanBundle(turnGives),
+    partnerGives: cleanBundle(partnerGives)
+  };
+  var humanPartners = state.players.filter(function (player) {
+    return player.id !== myPlayerId && !player.isCpu;
+  });
+  var selectedPartner = humanPartners.some(function (player) {
+    return player.id === partnerId;
+  }) ? partnerId : (_humanPartners$0$id = (_humanPartners$ = humanPartners[0]) === null || _humanPartners$ === void 0 ? void 0 : _humanPartners$.id) !== null && _humanPartners$0$id !== void 0 ? _humanPartners$0$id : myPlayerId;
+  var canStart = isTurnPlayer && isMainPhase(state) && !negotiation && selectedPartner !== myPlayerId && !((_state$players$select = state.players[selectedPartner]) !== null && _state$players$select !== void 0 && _state$players$select.isCpu) && canPlayerOffer(state, selectedPartner, draftOffer);
+  var canCounter = negotiation && !negotiation.decision && myPlayerId === negotiation.awaiting && canPlayerOffer(state, negotiation.partner, draftOffer);
+  var canIntervene = negotiation && myPlayerId !== negotiation.turnPlayer && myPlayerId !== negotiation.partner && canPlayerOffer(state, myPlayerId, draftOffer) && isBetterOffer(draftOffer, negotiation.currentOffer, negotiation.usedCombos);
+  var canShowIntervention = negotiation && canPotentiallyIntervene(state, myPlayerId);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "negotiation"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u30D7\u30EC\u30A4\u30E4\u30FC\u9593\u4EA4\u6E09"), !negotiation && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+    className: "partnerSelect"
+  }, "\u4EA4\u63DB\u76F8\u624B", /*#__PURE__*/React.createElement("select", {
+    value: selectedPartner,
+    onChange: function onChange(event) {
+      return setPartnerId(Number(event.target.value));
+    }
+  }, humanPartners.map(function (player) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: player.id,
+      value: player.id
+    }, player.name);
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "bundleGrid"
+  }, /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "\u3042\u306A\u305F\u304C\u6E21\u3059",
+    value: turnGives,
+    onChange: setTurnGives
+  }), /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "\u76F8\u624B\u304C\u6E21\u3059",
+    value: partnerGives,
+    onChange: setPartnerGives
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "startNegotiation",
+        partnerId: selectedPartner,
+        turnGives: turnGives,
+        partnerGives: partnerGives
+      });
+    },
+    disabled: !canStart
+  }, "\u4EA4\u63DB\u3092\u7533\u3057\u51FA\u308B"), /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, "\u53CC\u65B9\u304C1\u679A\u4EE5\u4E0A\u51FA\u3059\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002CPU\u306F\u4EA4\u6E09\u306B\u53C2\u52A0\u3057\u307E\u305B\u3093\u3002")), negotiation && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "currentOffer"
+  }, /*#__PURE__*/React.createElement("strong", null, state.players[negotiation.turnPlayer].name, " \u21C4 ", state.players[negotiation.partner].name), /*#__PURE__*/React.createElement("p", null, state.players[negotiation.turnPlayer].name, " \u304C\u6E21\u3059: ", bundleText(negotiation.currentOffer.turnGives)), /*#__PURE__*/React.createElement("p", null, state.players[negotiation.partner].name, " \u304C\u6E21\u3059: ", bundleText(negotiation.currentOffer.partnerGives)), negotiation.awaiting !== null && /*#__PURE__*/React.createElement("small", null, "\u8FD4\u7B54\u5F85\u3061: ", state.players[negotiation.awaiting].name), negotiation.decision && /*#__PURE__*/React.createElement("small", null, negotiation.decision.type === "accepted" ? "受諾済み" : "拒否済み", ": ", state.players[negotiation.decision.by].name)), !negotiation.decision && myPlayerId === negotiation.awaiting && /*#__PURE__*/React.createElement("div", {
+    className: "negotiationActions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "primary",
+    onClick: function onClick() {
+      return onEvent({
+        type: "acceptNegotiation"
+      });
+    }
+  }, "\u53D7\u3051\u5165\u308C\u308B"), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "rejectNegotiation"
+      });
+    }
+  }, "\u62D2\u5426")), negotiation.decision && myPlayerId === negotiation.turnPlayer && /*#__PURE__*/React.createElement("button", {
+    className: "primary",
+    onClick: function onClick() {
+      return onEvent({
+        type: "finalizeNegotiation"
+      });
+    }
+  }, "\u4EA4\u6E09\u3092\u78BA\u5B9A"), (!negotiation.decision && myPlayerId === negotiation.awaiting || canShowIntervention) && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "bundleGrid"
+  }, /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "".concat(state.players[negotiation.turnPlayer].name, " \u304C\u6E21\u3059"),
+    value: turnGives,
+    onChange: setTurnGives
+  }), /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "".concat(canShowIntervention ? me.name : state.players[negotiation.partner].name, " \u304C\u6E21\u3059"),
+    value: partnerGives,
+    onChange: setPartnerGives
+  })), myPlayerId === negotiation.awaiting && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "counterNegotiation",
+        turnGives: turnGives,
+        partnerGives: partnerGives
+      });
+    },
+    disabled: !canCounter
+  }, "\u6761\u4EF6\u5909\u66F4\u3092\u63D0\u793A"), canShowIntervention && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "interveneNegotiation",
+        turnGives: turnGives,
+        partnerGives: partnerGives
+      });
+    },
+    disabled: !canIntervene
+  }, "\u3088\u308A\u826F\u3044\u6761\u4EF6\u3067\u4ECB\u5165")), /*#__PURE__*/React.createElement("div", {
+    className: "negotiationHistory"
+  }, negotiation.history.map(function (line, index) {
+    return /*#__PURE__*/React.createElement("p", {
+      key: index
+    }, line);
+  }))));
+}
+function CriminalPanel(_ref25) {
+  var _state$pendingDiscard2;
+  var state = _ref25.state,
+    myPlayerId = _ref25.myPlayerId,
+    onEvent = _ref25.onEvent;
+  var _useState7 = useState(emptyBundle),
+    _useState8 = _slicedToArray(_useState7, 2),
+    discardBundle = _useState8[0],
+    setDiscardBundle = _useState8[1];
+  var _useState9 = useState(""),
+    _useState0 = _slicedToArray(_useState9, 2),
+    victimId = _useState0[0],
+    setVictimId = _useState0[1];
+  var need = Number(((_state$pendingDiscard2 = state.pendingDiscards) === null || _state$pendingDiscard2 === void 0 ? void 0 : _state$pendingDiscard2[myPlayerId]) || 0);
+  var pendingDiscardNames = pendingDiscardEntries(state).map(function (_ref26) {
+    var _ref27 = _slicedToArray(_ref26, 2),
+      playerId = _ref27[0],
+      needCount = _ref27[1];
+    return "".concat(state.players[playerId].name, ":").concat(needCount, "\u679A");
+  });
+  var pendingSteal = state.pendingSteal;
+  var canDiscard = need > 0 && totalResources(discardBundle) === need && hasResources(state.players[myPlayerId], cleanBundle(discardBundle));
+  var stealVictims = (pendingSteal === null || pendingSteal === void 0 ? void 0 : pendingSteal.victims) || [];
+  var selectedVictim = victimId || stealVictims[0];
+  if (state.action !== "discard" && state.action !== "criminal" && state.action !== "steal") return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "criminalPanel"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA"), state.action === "discard" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, "\u5EC3\u68C4\u5F85\u3061: ", pendingDiscardNames.join(" / ")), need > 0 ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "\u6368\u3066\u308B\u8CC7\u6E90 ".concat(need, "\u679A"),
+    value: discardBundle,
+    onChange: setDiscardBundle
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "discardResources",
+        resources: discardBundle
+      });
+    },
+    disabled: !canDiscard
+  }, "\u8CC7\u6E90\u3092\u6368\u3066\u308B")) : /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, "\u3042\u306A\u305F\u306F\u5EC3\u68C4\u5BFE\u8C61\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002")), state.action === "criminal" && /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, "\u73FE\u5728\u5730\u4EE5\u5916\u306E\u30BF\u30A4\u30EB\u3092\u30AF\u30EA\u30C3\u30AF\u3057\u3066\u79FB\u52D5\u3057\u307E\u3059\u3002\u79FB\u52D5\u5F8C\u3001\u96A3\u63A5\u30D7\u30EC\u30A4\u30E4\u30FC\u304B\u30891\u679A\u596A\u3048\u307E\u3059\u3002"), state.action === "steal" && pendingSteal && /*#__PURE__*/React.createElement(React.Fragment, null, pendingSteal.thief === myPlayerId ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+    className: "partnerSelect"
+  }, "\u596A\u3046\u76F8\u624B", /*#__PURE__*/React.createElement("select", {
+    value: selectedVictim,
+    onChange: function onChange(event) {
+      return setVictimId(Number(event.target.value));
+    }
+  }, stealVictims.map(function (playerId) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: playerId,
+      value: playerId
+    }, state.players[playerId].name);
+  }))), /*#__PURE__*/React.createElement("button", {
+    className: "primary",
+    onClick: function onClick() {
+      return onEvent({
+        type: "stealResource",
+        victimId: Number(selectedVictim)
+      });
+    }
+  }, "\u8CC7\u6E901\u679A\u3092\u596A\u3046")) : /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, state.players[pendingSteal.thief].name, " \u304C\u596A\u3046\u76F8\u624B\u3092\u9078\u3093\u3067\u3044\u307E\u3059\u3002")));
+}
+function HelpPanel() {
+  var _useState1 = useState("rules"),
+    _useState10 = _slicedToArray(_useState1, 2),
+    tab = _useState10[0],
+    setTab = _useState10[1];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "helpBox"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "helpTabs",
+    role: "tablist",
+    "aria-label": "\u30EB\u30FC\u30EB\u3068\u7528\u8A9E"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: tab === "rules" ? "selected" : "",
+    onClick: function onClick() {
+      return setTab("rules");
+    }
+  }, "\u30EB\u30FC\u30EB"), /*#__PURE__*/React.createElement("button", {
+    className: tab === "terms" ? "selected" : "",
+    onClick: function onClick() {
+      return setTab("terms");
+    }
+  }, "\u7528\u8A9E"), /*#__PURE__*/React.createElement("button", {
+    className: tab === "cards" ? "selected" : "",
+    onClick: function onClick() {
+      return setTab("cards");
+    }
+  }, "\u672A\u77E5\u3078\u306E\u65C5")), tab === "rules" && /*#__PURE__*/React.createElement("div", {
+    className: "helpContent"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u904A\u3073\u65B9"), /*#__PURE__*/React.createElement("p", null, "\u30B5\u30A4\u30B3\u30ED\u3067\u8CC7\u6E90\u3092\u5F97\u3066\u3001\u5C0F\u90FD\u5E02\u3001\u5927\u90FD\u5E02\u3001\u9818\u754C\u8DEF\u3092\u5E83\u3052\u307E\u3059\u300210 VP\u306B\u5230\u9054\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u52DD\u5229\u3067\u3059\u3002"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "\u521D\u671F\u914D\u7F6E\u3067\u306F\u5404\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u5C0F\u90FD\u5E02\u3068\u9818\u754C\u8DEF\u30922\u30BB\u30C3\u30C8\u7F6E\u304D\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u81EA\u5206\u306E\u756A\u306F\u30B5\u30A4\u30B3\u30ED\u3001\u8CC7\u6E90\u7372\u5F97\u3001\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u306E\u9806\u306B\u9032\u307F\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u3067\u306F\u4EA4\u63DB\u3001\u5EFA\u8A2D\u3001\u672A\u77E5\u3078\u306E\u65C5\u3001\u4EA4\u6E09\u3092\u884C\u3048\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u51FA\u76EE\u3068\u540C\u3058\u6570\u5B57\u306E\u30BF\u30A4\u30EB\u306B\u96A3\u63A5\u3059\u308B\u5C0F\u90FD\u5E02\u306F\u8CC7\u6E901\u3001\u5927\u90FD\u5E02\u306F\u8CC7\u6E902\u3092\u5F97\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "7\u304C\u51FA\u305F\u3089\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u79FB\u52D5\u3057\u3001\u305D\u306E\u30BF\u30A4\u30EB\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002"), /*#__PURE__*/React.createElement("li", null, "\u6B21\u5143\u9580\u306B\u63A5\u3059\u308B\u5C0F\u90FD\u5E02\u304B\u5927\u90FD\u5E02\u304C\u3042\u308B\u3068\u30012:1\u307E\u305F\u306F3:1\u4EA4\u6613\u304C\u4F7F\u3048\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u4EBA\u6570\u304C\u8DB3\u308A\u306A\u3044\u6642\u306F\u30D7\u30EC\u30A4\u30E4\u30FC\u30AB\u30FC\u30C9\u304B\u3089CPU\u306B\u5207\u308A\u66FF\u3048\u3089\u308C\u307E\u3059\u3002CPU\u306F\u4EA4\u6E09\u306B\u53C2\u52A0\u3057\u307E\u305B\u3093\u3002")), /*#__PURE__*/React.createElement("h2", null, "\u52DD\u5229\u70B9"), /*#__PURE__*/React.createElement("p", null, "\u5C0F\u90FD\u5E02\u306F1 VP\u3001\u5927\u90FD\u5E02\u306F2 VP\u3001\u52DD\u5229\u8A18\u9332\u306F1 VP\u3067\u3059\u3002\u6700\u9577\u9818\u754C\u8DEF\u3068\u6700\u5927TVA\u529B\u306F\u305D\u308C\u305E\u308C2 VP\u3067\u3059\u3002")), tab === "terms" && /*#__PURE__*/React.createElement("div", {
+    className: "helpContent"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u7528\u8A9E\u5BFE\u5FDC"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5C0F\u90FD\u5E02"), /*#__PURE__*/React.createElement("dd", null, "\u57FA\u790E\u62E0\u70B9\u3002\u5EFA\u3066\u308B\u3068\u96A3\u63A5\u30BF\u30A4\u30EB\u304B\u3089\u8CC7\u6E90\u3092\u5F97\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5927\u90FD\u5E02"), /*#__PURE__*/React.createElement("dd", null, "\u5C0F\u90FD\u5E02\u3092\u5F37\u5316\u3057\u305F\u62E0\u70B9\u3002\u7523\u51FA\u304C2\u500D\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u9818\u754C\u8DEF"), /*#__PURE__*/React.createElement("dd", null, "\u5C0F\u90FD\u5E02\u540C\u58EB\u3092\u3064\u306A\u304E\u3001\u65B0\u3057\u3044\u5C0F\u90FD\u5E02\u3092\u7F6E\u304F\u305F\u3081\u306E\u63A5\u7D9A\u8DEF\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u6B21\u5143\u9580"), /*#__PURE__*/React.createElement("dd", null, "\u63A5\u3057\u3066\u3044\u308B\u3068\u901A\u4FE1\u4EA4\u6613\u304C\u6709\u5229\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30F4\u30A9\u30A4\u30C9"), /*#__PURE__*/React.createElement("dd", null, "\u8CC7\u6E90\u3092\u7523\u51FA\u3057\u306A\u3044\u7279\u6B8A\u30BF\u30A4\u30EB\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA"), /*#__PURE__*/React.createElement("dd", null, "\u3044\u308B\u30BF\u30A4\u30EB\u306E\u7523\u51FA\u3092\u6B62\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TVA"), /*#__PURE__*/React.createElement("dd", null, "\u4F7F\u3046\u3068\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u52D5\u304B\u3057\u307E\u3059\u3002"))), /*#__PURE__*/React.createElement("h2", null, "\u8CC7\u6E90"), /*#__PURE__*/React.createElement("p", null, "\u9271\u7269\u6B21\u5143=\u30EC\u30A2\u30E1\u30BF\u30EB\u3001\u6A5F\u68B0\u6B21\u5143=\u30CA\u30CE\u30DE\u30B7\u30F3\u3001\u71B1\u5E2F\u6B21\u5143=\u5EFA\u6750\u3001\u5927\u8349\u539F=\u76AE\u9769\u3001\u80A5\u6C83\u306A\u5927\u5730=\u7A40\u7269\u3002")), tab === "cards" && /*#__PURE__*/React.createElement("div", {
+    className: "helpContent"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u672A\u77E5\u3078\u306E\u65C5\u30AB\u30FC\u30C9"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TVA"), /*#__PURE__*/React.createElement("dd", null, "\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u79FB\u52D5\u3057\u307E\u3059\u30023\u679A\u4EE5\u4E0A\u3067\u6700\u5927TVA\u529B\u306E\u5019\u88DC\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u9818\u754C\u8DEF\u958B\u901A"), /*#__PURE__*/React.createElement("dd", null, "\u7121\u6599\u3067\u9818\u754C\u8DEF\u30922\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u62BC\u53CE"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u3092\u4ED6\u30D7\u30EC\u30A4\u30E4\u30FC\u5168\u54E1\u304B\u3089\u96C6\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u88DC\u7D66\u885B\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u30922\u3064\u53D7\u3051\u53D6\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u52DD\u5229\u8A18\u9332"), /*#__PURE__*/React.createElement("dd", null, "\u6301\u3063\u3066\u3044\u308B\u3060\u3051\u30671 VP\u3067\u3059\u3002")))));
+}
+function usePeerRoom(state, setState, roomId, myPlayerId) {
+  var _useState11 = useState({
+      mode: "local",
+      status: "ローカル",
+      share: ""
+    }),
+    _useState12 = _slicedToArray(_useState11, 2),
+    net = _useState12[0],
+    setNet = _useState12[1];
+  var peerRef = useRef(null);
+  var connections = useRef([]);
+  var stateRef = useRef(state);
+  stateRef.current = state;
+  useEffect(function () {
+    var script = document.createElement("script");
+    script.src = "./vendor/peerjs.min.js";
+    script.onload = function () {
+      return setNet(function (n) {
+        return _objectSpread(_objectSpread({}, n), {}, {
+          status: "オンライン接続を準備できます"
+        });
+      });
+    };
+    script.onerror = function () {
+      return setNet(function (n) {
+        return _objectSpread(_objectSpread({}, n), {}, {
+          status: "オンライン同期ライブラリを読み込めませんでした"
+        });
+      });
+    };
+    document.head.appendChild(script);
+    return function () {
+      return script.remove();
+    };
+  }, []);
+  function host() {
+    if (!window.Peer) return;
+    var peer = new window.Peer("star-".concat(roomId, "-").concat(Date.now().toString(36)));
+    peerRef.current = peer;
+    peer.on("open", function (id) {
+      var url = "".concat(location.origin).concat(location.pathname, "#join=").concat(id, "&p=1");
+      setNet({
+        mode: "host",
+        status: "ホスト中",
+        share: url
+      });
+      history.replaceState(null, "", "#host=".concat(id, "&p=0"));
+    });
+    peer.on("connection", function (conn) {
+      connections.current.push(conn);
+      conn.on("open", function () {
+        return conn.send({
+          type: "state",
+          state: stateRef.current
+        });
+      });
+      conn.on("data", function (message) {
+        if (message.type === "event") {
+          setState(function (prev) {
+            var next = reducer(prev, message.event);
+            connections.current.forEach(function (c) {
+              return c.open && c.send({
+                type: "state",
+                state: next
+              });
+            });
+            return next;
+          });
+        }
+      });
+    });
+  }
+  function join(hostId) {
+    if (!window.Peer || !hostId) return;
+    var peer = new window.Peer();
+    peerRef.current = peer;
+    peer.on("open", function () {
+      var conn = peer.connect(hostId);
+      connections.current = [conn];
+      conn.on("open", function () {
+        return setNet({
+          mode: "guest",
+          status: "参加中",
+          share: location.href
+        });
+      });
+      conn.on("data", function (message) {
+        if (message.type === "state") setState(message.state);
+      });
+    });
+  }
+  function send(event) {
+    if (net.mode === "guest") {
+      var _connections$current$;
+      (_connections$current$ = connections.current[0]) === null || _connections$current$ === void 0 || _connections$current$.send({
+        type: "event",
+        event: _objectSpread(_objectSpread({}, event), {}, {
+          playerId: myPlayerId
+        })
+      });
+      return true;
+    }
+    return false;
+  }
+  useEffect(function () {
+    if (net.mode === "host") connections.current.forEach(function (c) {
+      return c.open && c.send({
+        type: "state",
+        state: state
+      });
+    });
+  }, [state, net.mode]);
+  useEffect(function () {
+    var params = new URLSearchParams(location.hash.replace("#", ""));
+    var joinId = params.get("join");
+    if (joinId) {
+      var timer = setInterval(function () {
+        if (window.Peer) {
+          clearInterval(timer);
+          join(joinId);
+        }
+      }, 250);
+      return function () {
+        return clearInterval(timer);
+      };
+    }
+  }, []);
+  return {
+    net: net,
+    host: host,
+    send: send
+  };
+}
+function Board(_ref28) {
+  var state = _ref28.state,
+    onEvent = _ref28.onEvent,
+    myPlayerId = _ref28.myPlayerId;
+  var active = currentPlayer(state).id;
+  var canClick = state.phase === "setup" ? active === myPlayerId : state.turn === myPlayerId;
+  return /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 720 680",
+    className: "board",
+    role: "img",
+    "aria-label": "\u5B87\u5B99\u8CC7\u6E90\u76E4\u9762"
+  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("radialGradient", {
+    id: "space",
+    cx: "50%",
+    cy: "45%"
+  }, /*#__PURE__*/React.createElement("stop", {
+    offset: "0%",
+    stopColor: "#21324b"
+  }), /*#__PURE__*/React.createElement("stop", {
+    offset: "65%",
+    stopColor: "#111827"
+  }), /*#__PURE__*/React.createElement("stop", {
+    offset: "100%",
+    stopColor: "#08111f"
+  })), /*#__PURE__*/React.createElement("filter", {
+    id: "glow"
+  }, /*#__PURE__*/React.createElement("feGaussianBlur", {
+    stdDeviation: "3",
+    result: "coloredBlur"
+  }), /*#__PURE__*/React.createElement("feMerge", null, /*#__PURE__*/React.createElement("feMergeNode", {
+    "in": "coloredBlur"
+  }), /*#__PURE__*/React.createElement("feMergeNode", {
+    "in": "SourceGraphic"
+  })))), /*#__PURE__*/React.createElement("rect", {
+    width: "720",
+    height: "680",
+    fill: "url(#space)"
+  }), state.board.tiles.map(function (tile) {
+    var points = tile.corners.map(function (id) {
+      return state.board.vertices.find(function (v) {
+        return v.id === id;
+      });
+    }).map(function (p) {
+      return "".concat(p.x, ",").concat(p.y);
+    }).join(" ");
+    var fill = tile.terrain === "desert" ? "#3b4256" : RESOURCES[tile.terrain].color;
+    return /*#__PURE__*/React.createElement("g", {
+      key: tile.id,
+      onClick: function onClick() {
+        return onEvent({
+          type: "selectTile",
+          tileId: tile.id
+        });
+      }
+    }, /*#__PURE__*/React.createElement("polygon", {
+      className: "hex",
+      points: points,
+      fill: fill,
+      opacity: state.criminalTile === tile.id ? 0.5 : 0.88
+    }), /*#__PURE__*/React.createElement("text", {
+      x: tile.center.x,
+      y: tile.center.y - 9,
+      className: "tileName"
+    }, tile.terrain === "desert" ? "ヴォイド" : RESOURCES[tile.terrain].terrain), tile.number && /*#__PURE__*/React.createElement("g", null, /*#__PURE__*/React.createElement("circle", {
+      cx: tile.center.x,
+      cy: tile.center.y + 16,
+      r: "17",
+      fill: tile.number === 6 || tile.number === 8 ? "#fee2e2" : "#f8fafc"
+    }), /*#__PURE__*/React.createElement("text", {
+      x: tile.center.x,
+      y: tile.center.y + 22,
+      className: "num"
+    }, tile.number)), state.criminalTile === tile.id && /*#__PURE__*/React.createElement("text", {
+      x: tile.center.x,
+      y: tile.center.y + 47,
+      className: "criminal",
+      filter: "url(#glow)"
+    }, "RV"));
+  }), state.board.spaceports.map(function (spaceport) {
+    var tint = spaceport.type ? RESOURCES[spaceport.type].color : "#4f9dbd";
+    return /*#__PURE__*/React.createElement("g", {
+      key: spaceport.id,
+      className: "spaceport"
+    }, /*#__PURE__*/React.createElement("line", {
+      x1: spaceport.x,
+      y1: spaceport.y,
+      x2: spaceport.labelX,
+      y2: spaceport.labelY,
+      stroke: "rgba(219,234,254,.55)",
+      strokeWidth: "2"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: spaceport.labelX,
+      cy: spaceport.labelY,
+      r: "18",
+      fill: tint,
+      stroke: "#eaf6ff",
+      strokeWidth: "2"
+    }), /*#__PURE__*/React.createElement("text", {
+      x: spaceport.labelX,
+      y: spaceport.labelY - 2,
+      className: "spaceportRate"
+    }, spaceport.type ? "2:1" : "3:1"), /*#__PURE__*/React.createElement("text", {
+      x: spaceport.labelX,
+      y: spaceport.labelY + 10,
+      className: "spaceportResource"
+    }, spaceport.type ? RESOURCES[spaceport.type].name.slice(0, 2) : "SP"));
+  }), state.board.edges.map(function (edge) {
+    var a = state.board.vertices.find(function (v) {
+      return v.id === edge.a;
+    });
+    var b = state.board.vertices.find(function (v) {
+      return v.id === edge.b;
+    });
+    var route = state.routes[edge.id];
+    return /*#__PURE__*/React.createElement("line", {
+      key: edge.id,
+      x1: a.x,
+      y1: a.y,
+      x2: b.x,
+      y2: b.y,
+      className: "edge ".concat(canClick ? "clickable" : ""),
+      stroke: route ? state.players[route.player].color : "rgba(255,255,255,.28)",
+      strokeWidth: route ? 8 : 6,
+      onClick: function onClick() {
+        return canClick && onEvent({
+          type: "edge",
+          edgeId: edge.id
+        });
+      }
+    });
+  }), state.board.vertices.map(function (vertex) {
+    var building = state.buildings[vertex.id];
+    return /*#__PURE__*/React.createElement("g", {
+      key: vertex.id,
+      onClick: function onClick() {
+        return canClick && onEvent({
+          type: "vertex",
+          vertexId: vertex.id
+        });
+      },
+      className: canClick ? "clickable" : ""
+    }, /*#__PURE__*/React.createElement("circle", {
+      cx: vertex.x,
+      cy: vertex.y,
+      r: "10",
+      fill: building ? state.players[building.player].color : "rgba(255,255,255,.22)",
+      stroke: "#f8fafc",
+      strokeWidth: "2"
+    }), (building === null || building === void 0 ? void 0 : building.type) === "star" && /*#__PURE__*/React.createElement("circle", {
+      cx: vertex.x,
+      cy: vertex.y,
+      r: "5",
+      fill: "#fff7ad"
+    }));
+  }));
+}
+function App() {
+  var initialRoom = useMemo(function () {
+    return new URLSearchParams(location.hash.replace("#", "")).get("room") || crypto.randomUUID().slice(0, 8);
+  }, []);
+  var _useState13 = useState(function () {
+      return createGame(initialRoom);
+    }),
+    _useState14 = _slicedToArray(_useState13, 2),
+    state = _useState14[0],
+    setState = _useState14[1];
+  var _useState15 = useState(function () {
+      return Number(new URLSearchParams(location.hash.replace("#", "")).get("p") || 0);
+    }),
+    _useState16 = _slicedToArray(_useState15, 2),
+    myPlayerId = _useState16[0],
+    setMyPlayerId = _useState16[1];
+  var _useState17 = useState({
+      give: "rock",
+      take: "food"
+    }),
+    _useState18 = _slicedToArray(_useState17, 2),
+    trade = _useState18[0],
+    setTrade = _useState18[1];
+  var _useState19 = useState({
+      resource: "rock",
+      a: "rock",
+      b: "material"
+    }),
+    _useState20 = _slicedToArray(_useState19, 2),
+    devChoice = _useState20[0],
+    setDevChoice = _useState20[1];
+  var _usePeerRoom = usePeerRoom(state, setState, state.id, myPlayerId),
+    net = _usePeerRoom.net,
+    host = _usePeerRoom.host,
+    send = _usePeerRoom.send;
+  function act(event) {
+    var owned = _objectSpread(_objectSpread({}, event), {}, {
+      playerId: myPlayerId
+    });
+    if (send(owned)) return;
+    setState(function (prev) {
+      return reducer(prev, owned);
+    });
+  }
+  useEffect(function () {
+    if (net.mode === "guest") return;
+    var event = nextCpuEvent(state);
+    if (!event) return;
+    var timer = setTimeout(function () {
+      setState(function (prev) {
+        var freshEvent = nextCpuEvent(prev);
+        if (!freshEvent) return prev;
+        var next = reducer(prev, freshEvent);
+        if (freshEvent.follow) next = reducer(next, freshEvent.follow);
+        return next;
+      });
+    }, state.phase === "setup" ? 550 : 850);
+    return function () {
+      return clearTimeout(timer);
+    };
+  }, [state, net.mode]);
+  var me = state.players[myPlayerId];
+  var active = currentPlayer(state);
+  var actionable = state.phase === "setup" ? active.id === myPlayerId : state.turn === myPlayerId;
+  var mainActionable = actionable && isMainPhase(state);
+  var currentTradeRate = tradeRateFor(state, myPlayerId, trade.give);
+  var selectablePlayers = state.players.filter(function (player) {
+    return !player.isCpu || player.id === myPlayerId;
+  });
+  return /*#__PURE__*/React.createElement("main", null, /*#__PURE__*/React.createElement("section", {
+    className: "topbar"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", null, "Beyonders"), /*#__PURE__*/React.createElement("p", null, "\u5C0F\u90FD\u5E02\u3092\u5E83\u3052\u3001\u5927\u90FD\u5E02\u3078\u80B2\u3066\u300110\u70B9\u3092\u76EE\u6307\u30594\u4EBA\u7528\u30AA\u30F3\u30E9\u30A4\u30F3\u5353\u3002")), /*#__PURE__*/React.createElement("div", {
+    className: "net"
+  }, /*#__PURE__*/React.createElement("span", null, net.status), /*#__PURE__*/React.createElement("button", {
+    onClick: host,
+    title: "\u90E8\u5C4B\u3092\u4F5C\u308B"
+  }, /*#__PURE__*/React.createElement(RadioTower, {
+    size: 17
+  }), " \u90E8\u5C4B\u4F5C\u6210"), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      var _navigator$clipboard;
+      return net.share && ((_navigator$clipboard = navigator.clipboard) === null || _navigator$clipboard === void 0 ? void 0 : _navigator$clipboard.writeText(net.share));
+    },
+    disabled: !net.share,
+    title: "\u5171\u6709\u30EA\u30F3\u30AF\u3092\u30B3\u30D4\u30FC"
+  }, /*#__PURE__*/React.createElement(Copy, {
+    size: 17
+  }), " \u5171\u6709"))), /*#__PURE__*/React.createElement("section", {
+    className: "layout"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "playSurface"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "statusLine"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "pill"
+  }, "\u73FE\u5728: ", active.name), /*#__PURE__*/React.createElement("span", {
+    className: "pill"
+  }, "\u30D5\u30A7\u30FC\u30BA: ", phaseLabel(state)), /*#__PURE__*/React.createElement("span", {
+    className: "pill"
+  }, "\u64CD\u4F5C: ", BUILD_LABEL[state.action] || (state.action === "criminal" ? "ラヴェジャーズ" : state.action === "discard" ? "資源廃棄" : state.action === "steal" ? "資源奪取" : state.action)), state.dice && /*#__PURE__*/React.createElement("span", {
+    className: "pill"
+  }, "\u51FA\u76EE: ", state.dice.join(" + "), " = ", state.dice[0] + state.dice[1])), /*#__PURE__*/React.createElement(Board, {
+    state: state,
+    onEvent: act,
+    myPlayerId: myPlayerId
+  })), /*#__PURE__*/React.createElement("aside", {
+    className: "panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "self"
+  }, /*#__PURE__*/React.createElement("label", null, "\u3042\u306A\u305F", /*#__PURE__*/React.createElement("select", {
+    value: myPlayerId,
+    onChange: function onChange(e) {
+      return setMyPlayerId(Number(e.target.value));
+    }
+  }, selectablePlayers.map(function (p) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: p.id,
+      value: p.id
+    }, p.name, p.isCpu ? " CPU" : "");
+  }))), /*#__PURE__*/React.createElement("input", {
+    value: me.name,
+    onChange: function onChange(e) {
+      return act({
+        type: "rename",
+        name: e.target.value
+      });
+    },
+    disabled: me.isCpu
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "primary",
+    onClick: function onClick() {
+      return act({
+        type: "roll"
+      });
+    },
+    disabled: !actionable || state.phase !== "play" || state.rolled
+  }, /*#__PURE__*/React.createElement(Dice5, {
+    size: 18
+  }), " \u30B5\u30A4\u30B3\u30ED"), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return act({
+        type: "endTurn"
+      });
+    },
+    disabled: !mainActionable || !!state.negotiation
+  }, /*#__PURE__*/React.createElement(Undo2, {
+    size: 18
+  }), " \u30BF\u30FC\u30F3\u7D42\u4E86")), /*#__PURE__*/React.createElement("div", {
+    className: "tools"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: state.action === "route" ? "selected" : "",
+    onClick: function onClick() {
+      return act({
+        type: "setAction",
+        action: "route"
+      });
+    }
+  }, /*#__PURE__*/React.createElement(Rocket, {
+    size: 17
+  }), " \u9818\u754C\u8DEF"), /*#__PURE__*/React.createElement("button", {
+    className: state.action === "planet" ? "selected" : "",
+    onClick: function onClick() {
+      return act({
+        type: "setAction",
+        action: "planet"
+      });
+    }
+  }, /*#__PURE__*/React.createElement(Orbit, {
+    size: 17
+  }), " \u5C0F\u90FD\u5E02"), /*#__PURE__*/React.createElement("button", {
+    className: state.action === "star" ? "selected" : "",
+    onClick: function onClick() {
+      return act({
+        type: "setAction",
+        action: "star"
+      });
+    }
+  }, /*#__PURE__*/React.createElement(Satellite, {
+    size: 17
+  }), " \u5927\u90FD\u5E02"), /*#__PURE__*/React.createElement("button", {
+    className: state.action === "criminal" ? "selected" : "",
+    onClick: function onClick() {
+      return act({
+        type: "setAction",
+        action: "criminal"
+      });
+    }
+  }, /*#__PURE__*/React.createElement(Swords, {
+    size: 17
+  }), " \u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA")), /*#__PURE__*/React.createElement("div", {
+    className: "costs"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u5EFA\u8A2D\u30B3\u30B9\u30C8"), /*#__PURE__*/React.createElement("p", null, "\u9818\u754C\u8DEF ", /*#__PURE__*/React.createElement(Cost, {
+    cost: COSTS.route
+  })), /*#__PURE__*/React.createElement("p", null, "\u5C0F\u90FD\u5E02 ", /*#__PURE__*/React.createElement(Cost, {
+    cost: COSTS.planet
+  })), /*#__PURE__*/React.createElement("p", null, "\u5927\u90FD\u5E02 ", /*#__PURE__*/React.createElement(Cost, {
+    cost: COSTS.star
+  })), /*#__PURE__*/React.createElement("p", null, "\u672A\u77E5\u3078\u306E\u65C5 ", /*#__PURE__*/React.createElement(Cost, {
+    cost: COSTS.frontier
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return act({
+        type: "buyDev"
+      });
+    },
+    disabled: !mainActionable
+  }, /*#__PURE__*/React.createElement(Shuffle, {
+    size: 17
+  }), " \u672A\u77E5\u3078\u306E\u65C5\u3092\u7372\u5F97")), /*#__PURE__*/React.createElement("div", {
+    className: "trade"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u901A\u4FE1\u4EA4\u6613 ", currentTradeRate, ":1"), /*#__PURE__*/React.createElement("select", {
+    value: trade.give,
+    onChange: function onChange(e) {
+      return setTrade(_objectSpread(_objectSpread({}, trade), {}, {
+        give: e.target.value
+      }));
+    }
+  }, RESOURCE_KEYS.map(function (key) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: key,
+      value: key
+    }, RESOURCES[key].name);
+  })), /*#__PURE__*/React.createElement("span", null, "\u2192"), /*#__PURE__*/React.createElement("select", {
+    value: trade.take,
+    onChange: function onChange(e) {
+      return setTrade(_objectSpread(_objectSpread({}, trade), {}, {
+        take: e.target.value
+      }));
+    }
+  }, RESOURCE_KEYS.map(function (key) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: key,
+      value: key
+    }, RESOURCES[key].name);
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return act(_objectSpread({
+        type: "bankTrade"
+      }, trade));
+    },
+    disabled: !mainActionable
+  }, "\u4EA4\u63DB"), /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, "\u6B21\u5143\u9580: ", spaceportText(state, myPlayerId))), /*#__PURE__*/React.createElement(CriminalPanel, {
+    state: state,
+    myPlayerId: myPlayerId,
+    onEvent: act
+  }), /*#__PURE__*/React.createElement(NegotiationPanel, {
+    state: state,
+    myPlayerId: myPlayerId,
+    onEvent: act
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "frontiers"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u624B\u672D\u306E\u672A\u77E5\u3078\u306E\u65C5"), /*#__PURE__*/React.createElement("div", {
+    className: "miniControls"
+  }, /*#__PURE__*/React.createElement("select", {
+    value: devChoice.resource,
+    onChange: function onChange(e) {
+      return setDevChoice(_objectSpread(_objectSpread({}, devChoice), {}, {
+        resource: e.target.value
+      }));
+    }
+  }, RESOURCE_KEYS.map(function (key) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: key,
+      value: key
+    }, "\u62BC\u53CE: ", RESOURCES[key].name);
+  })), /*#__PURE__*/React.createElement("select", {
+    value: devChoice.a,
+    onChange: function onChange(e) {
+      return setDevChoice(_objectSpread(_objectSpread({}, devChoice), {}, {
+        a: e.target.value
+      }));
+    }
+  }, RESOURCE_KEYS.map(function (key) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: key,
+      value: key
+    }, "\u88DC\u7D661: ", RESOURCES[key].name);
+  })), /*#__PURE__*/React.createElement("select", {
+    value: devChoice.b,
+    onChange: function onChange(e) {
+      return setDevChoice(_objectSpread(_objectSpread({}, devChoice), {}, {
+        b: e.target.value
+      }));
+    }
+  }, RESOURCE_KEYS.map(function (key) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: key,
+      value: key
+    }, "\u88DC\u7D662: ", RESOURCES[key].name);
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "cards"
+  }, me.hiddenNewFrontiers.map(function (card, index) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: "".concat(frontierType(card), "-").concat(frontierBoughtTurn(card), "-").concat(index),
+      onClick: function onClick() {
+        return act(_objectSpread({
+          type: "playDev",
+          card: frontierType(card)
+        }, devChoice));
+      },
+      disabled: !canPlayFrontier(card, state)
+    }, DEV_NAMES[frontierType(card)], !canPlayFrontier(card, state) && frontierType(card) !== "point" ? " 次ターン" : "");
+  }), !me.hiddenNewFrontiers.length && /*#__PURE__*/React.createElement("span", {
+    className: "muted"
+  }, "\u306A\u3057"))), /*#__PURE__*/React.createElement(HelpPanel, null))), /*#__PURE__*/React.createElement("section", {
+    className: "players"
+  }, state.players.map(function (player) {
+    return /*#__PURE__*/React.createElement("article", {
+      key: player.id,
+      style: {
+        "--player": player.color
+      },
+      className: player.id === active.id ? "active" : ""
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("strong", null, player.name, player.isCpu && /*#__PURE__*/React.createElement("span", {
+      className: "badge cpuBadge"
+    }, "CPU"), player.bonus.longest && /*#__PURE__*/React.createElement("span", {
+      className: "badge"
+    }, "\u6700\u9577\u9818\u754C\u8DEF"), player.bonus.largestTv && /*#__PURE__*/React.createElement("span", {
+      className: "badge"
+    }, "\u6700\u5927TVA\u529B")), /*#__PURE__*/React.createElement("span", null, getVp(state, player.id), " VP")), /*#__PURE__*/React.createElement("p", null, visibleResourceText(player, myPlayerId)), /*#__PURE__*/React.createElement("small", null, "TVA ", player.playedTv, " / \u672A\u77E5\u3078\u306E\u65C5 ", player.hiddenNewFrontiers.length, "\u679A / \u516C\u958B\u6E08\u307F: ", publicPlayedFrontiers(player), " / ", spaceportText(state, player.id)), /*#__PURE__*/React.createElement("button", {
+      className: "cpuToggle",
+      onClick: function onClick() {
+        return act({
+          type: "setCpu",
+          targetId: player.id,
+          isCpu: !player.isCpu
+        });
+      },
+      disabled: player.id === myPlayerId || net.mode === "guest",
+      title: player.id === myPlayerId ? "自分の席はCPUにできません" : "CPUを切り替え"
+    }, player.isCpu ? "CPU解除" : "CPUにする"));
+  })), /*#__PURE__*/React.createElement("section", {
+    className: "log"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u822A\u884C\u30ED\u30B0"), state.winner !== null && /*#__PURE__*/React.createElement("div", {
+    className: "winner"
+  }, state.players[state.winner].name, " \u306E\u52DD\u5229"), (state.privateMessages || []).filter(function (message) {
+    return message.to === myPlayerId;
+  }).map(function (message, index) {
+    return /*#__PURE__*/React.createElement("p", {
+      className: "privateLog",
+      key: "private-".concat(index)
+    }, message.text);
+  }), state.log.map(function (line, index) {
+    return /*#__PURE__*/React.createElement("p", {
+      key: index
+    }, line);
+  })));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
