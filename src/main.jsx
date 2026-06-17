@@ -364,6 +364,10 @@ function createGame(roomId = crypto.randomUUID().slice(0, 8)) {
     criminalTile: neutron,
     selectedTile: neutron,
     negotiation: null,
+    pendingDiscards: {},
+    pendingSteal: null,
+    criminalMover: null,
+    privateMessages: [],
     log: ["宇宙航路の準備が整いました。惑星と星間航路を初期配置してください。"],
     winner: null,
   };
@@ -438,6 +442,57 @@ function addLog(state, text) {
   state.log = [text, ...state.log].slice(0, 8);
 }
 
+function addPrivateMessage(state, playerId, text) {
+  state.privateMessages = [{ to: playerId, text }, ...(state.privateMessages || [])].slice(0, 16);
+}
+
+function discardRequirement(player) {
+  const total = totalResources(player.resources);
+  return total >= 8 ? Math.floor(total / 2) : 0;
+}
+
+function pendingDiscardEntries(state) {
+  return Object.entries(state.pendingDiscards || {}).filter(([, value]) => value > 0);
+}
+
+function adjacentStealVictims(state, tileId, thiefId) {
+  const tile = state.board.tiles[tileId];
+  if (!tile) return [];
+  return [...new Set(
+    tile.corners
+      .map((vertexId) => state.buildings[vertexId]?.player)
+      .filter((playerId) => playerId !== undefined && playerId !== thiefId && totalResources(state.players[playerId].resources) > 0)
+  )];
+}
+
+function randomResourceKey(resources) {
+  const pool = RESOURCE_KEYS.flatMap((key) => Array(Number(resources[key] || 0)).fill(key));
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+}
+
+function startCriminalMove(state, actor) {
+  state.action = "criminal";
+  state.criminalMover = actor;
+  state.selectedTile = state.criminalTile;
+}
+
+function finishCriminalMove(state, actor, tileId) {
+  if (tileId === state.criminalTile) return false;
+  state.criminalTile = tileId;
+  addLog(state, `ユニヴァース クリミナルが${tileName(state.board.tiles[tileId])}へ移動しました。`);
+  const victims = adjacentStealVictims(state, tileId, actor);
+  if (victims.length) {
+    state.pendingSteal = { thief: actor, victims };
+    state.action = "steal";
+    addLog(state, `${state.players[actor].name} が奪う相手を選びます。`);
+  } else {
+    state.pendingSteal = null;
+    state.criminalMover = null;
+    state.action = state.rolled ? "build" : "roll";
+  }
+  return true;
+}
+
 function getVp(state, playerId) {
   const planets = Object.values(state.buildings).filter((b) => b.player === playerId && b.type === "planet").length;
   const stars = Object.values(state.buildings).filter((b) => b.player === playerId && b.type === "star").length;
@@ -494,9 +549,19 @@ function refreshBonuses(state) {
 
 function produce(state, total) {
   if (total === 7) {
-    addLog(state, "7が出ました。ユニヴァース クリミナルを任意のタイルへ移動できます。");
-    state.action = "criminal";
-    state.selectedTile = state.criminalTile;
+    const pending = Object.fromEntries(
+      state.players
+        .map((player) => [player.id, discardRequirement(player)])
+        .filter(([, need]) => need > 0)
+    );
+    state.pendingDiscards = pending;
+    if (pendingDiscardEntries(state).length) {
+      state.action = "discard";
+      addLog(state, "7が出ました。資源8枚以上のプレイヤーは半分を捨てます。");
+    } else {
+      addLog(state, "7が出ました。ユニヴァース クリミナルを任意のタイルへ移動できます。");
+      startCriminalMove(state, state.turn);
+    }
     return;
   }
   const gained = [];
@@ -541,16 +606,49 @@ function reducer(state, event) {
     return next;
   }
   if (event.type === "setAction") {
+    if (["discard", "steal"].includes(next.action)) return next;
     next.action = event.action;
     return next;
   }
   if (event.type === "selectTile") {
     next.selectedTile = event.tileId;
     if (next.action === "criminal") {
-      next.criminalTile = event.tileId;
-      addLog(next, `ユニヴァース クリミナルが${tileName(next.board.tiles[event.tileId])}へ移動しました。`);
-      next.action = next.rolled ? "build" : "roll";
+      if (event.tileId === next.criminalTile) return next;
+      finishCriminalMove(next, next.criminalMover ?? actor, event.tileId);
     }
+    return next;
+  }
+  if (event.type === "discardResources") {
+    const need = Number(next.pendingDiscards?.[actor] || 0);
+    const bundle = cleanBundle(event.resources || {});
+    if (!need || totalResources(bundle) !== need || !hasResources(player, bundle)) return next;
+    RESOURCE_KEYS.forEach((key) => {
+      player.resources[key] -= bundle[key] || 0;
+    });
+    delete next.pendingDiscards[actor];
+    addLog(next, `${player.name} が資源${need}枚を捨てました。`);
+    if (!pendingDiscardEntries(next).length) {
+      next.pendingDiscards = {};
+      addLog(next, "全員の廃棄が完了しました。ユニヴァース クリミナルを移動してください。");
+      startCriminalMove(next, next.turn);
+    }
+    return next;
+  }
+  if (event.type === "stealResource") {
+    const pending = next.pendingSteal;
+    const victimId = Number(event.victimId);
+    if (!pending || actor !== pending.thief || !pending.victims.includes(victimId)) return next;
+    const victim = next.players[victimId];
+    const stolen = randomResourceKey(victim.resources);
+    if (!stolen) return next;
+    victim.resources[stolen] -= 1;
+    next.players[actor].resources[stolen] += 1;
+    addLog(next, `${next.players[actor].name} が ${victim.name} から資源1枚を奪いました。`);
+    addPrivateMessage(next, actor, `${victim.name} から ${RESOURCES[stolen].name} を奪いました。`);
+    addPrivateMessage(next, victimId, `${next.players[actor].name} に ${RESOURCES[stolen].name} を奪われました。`);
+    next.pendingSteal = null;
+    next.criminalMover = null;
+    next.action = next.rolled ? "build" : "roll";
     return next;
   }
   if (event.type === "roll") {
@@ -645,7 +743,7 @@ function reducer(state, event) {
     next.discard.push(type);
     if (type === "tv") {
       player.playedTv += 1;
-      next.action = "criminal";
+      startCriminalMove(next, actor);
       addLog(next, `${player.name} がTVを起動。ユニヴァース クリミナルを移動します。`);
     }
     if (type === "route") {
@@ -941,6 +1039,66 @@ function NegotiationPanel({ state, myPlayerId, onEvent }) {
   );
 }
 
+function CriminalPanel({ state, myPlayerId, onEvent }) {
+  const [discardBundle, setDiscardBundle] = useState(emptyBundle);
+  const [victimId, setVictimId] = useState("");
+  const need = Number(state.pendingDiscards?.[myPlayerId] || 0);
+  const pendingDiscardNames = pendingDiscardEntries(state).map(([playerId, needCount]) => `${state.players[playerId].name}:${needCount}枚`);
+  const pendingSteal = state.pendingSteal;
+  const canDiscard = need > 0 && totalResources(discardBundle) === need && hasResources(state.players[myPlayerId], cleanBundle(discardBundle));
+  const stealVictims = pendingSteal?.victims || [];
+  const selectedVictim = victimId || stealVictims[0];
+
+  if (state.action !== "discard" && state.action !== "criminal" && state.action !== "steal") return null;
+
+  return (
+    <div className="criminalPanel">
+      <h2>ユニヴァース クリミナル</h2>
+      {state.action === "discard" && (
+        <>
+          <p className="spaceportNote">廃棄待ち: {pendingDiscardNames.join(" / ")}</p>
+          {need > 0 ? (
+            <>
+              <ResourceBundleInput title={`捨てる資源 ${need}枚`} value={discardBundle} onChange={setDiscardBundle} />
+              <button onClick={() => onEvent({ type: "discardResources", resources: discardBundle })} disabled={!canDiscard}>
+                資源を捨てる
+              </button>
+            </>
+          ) : (
+            <p className="spaceportNote">あなたは廃棄対象ではありません。</p>
+          )}
+        </>
+      )}
+      {state.action === "criminal" && (
+        <p className="spaceportNote">現在地以外のタイルをクリックして移動します。移動後、隣接プレイヤーから1枚奪えます。</p>
+      )}
+      {state.action === "steal" && pendingSteal && (
+        <>
+          {pendingSteal.thief === myPlayerId ? (
+            <>
+              <label className="partnerSelect">
+                奪う相手
+                <select value={selectedVictim} onChange={(event) => setVictimId(Number(event.target.value))}>
+                  {stealVictims.map((playerId) => (
+                    <option key={playerId} value={playerId}>
+                      {state.players[playerId].name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button className="primary" onClick={() => onEvent({ type: "stealResource", victimId: Number(selectedVictim) })}>
+                資源1枚を奪う
+              </button>
+            </>
+          ) : (
+            <p className="spaceportNote">{state.players[pendingSteal.thief].name} が奪う相手を選んでいます。</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function HelpPanel() {
   const [tab, setTab] = useState("rules");
   return (
@@ -1229,7 +1387,7 @@ function App() {
           <div className="statusLine">
             <span className="pill">現在: {active.name}</span>
             <span className="pill">フェーズ: {state.phase === "setup" ? "初期配置" : state.rolled ? "交易・建設" : "サイコロ"}</span>
-            <span className="pill">操作: {BUILD_LABEL[state.action] || (state.action === "criminal" ? "ユニヴァース クリミナル" : state.action)}</span>
+            <span className="pill">操作: {BUILD_LABEL[state.action] || (state.action === "criminal" ? "ユニヴァース クリミナル" : state.action === "discard" ? "資源廃棄" : state.action === "steal" ? "資源奪取" : state.action)}</span>
             {state.dice && <span className="pill">出目: {state.dice.join(" + ")} = {state.dice[0] + state.dice[1]}</span>}
           </div>
           <Board state={state} onEvent={act} myPlayerId={myPlayerId} />
@@ -1298,6 +1456,8 @@ function App() {
             <p className="spaceportNote">スペースポート: {spaceportText(state, myPlayerId)}</p>
           </div>
 
+          <CriminalPanel state={state} myPlayerId={myPlayerId} onEvent={act} />
+
           <NegotiationPanel state={state} myPlayerId={myPlayerId} onEvent={act} />
 
           <div className="frontiers">
@@ -1351,6 +1511,7 @@ function App() {
       <section className="log">
         <h2>航行ログ</h2>
         {state.winner !== null && <div className="winner">{state.players[state.winner].name} の勝利</div>}
+        {(state.privateMessages || []).filter((message) => message.to === myPlayerId).map((message, index) => <p className="privateLog" key={`private-${index}`}>{message.text}</p>)}
         {state.log.map((line, index) => <p key={index}>{line}</p>)}
       </section>
     </main>

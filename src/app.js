@@ -490,6 +490,10 @@ function createGame() {
     criminalTile: neutron,
     selectedTile: neutron,
     negotiation: null,
+    pendingDiscards: {},
+    pendingSteal: null,
+    criminalMover: null,
+    privateMessages: [],
     log: ["宇宙航路の準備が整いました。惑星と星間航路を初期配置してください。"],
     winner: null
   };
@@ -574,6 +578,63 @@ function currentPlayer(state) {
 function addLog(state, text) {
   state.log = [text].concat(_toConsumableArray(state.log)).slice(0, 8);
 }
+function addPrivateMessage(state, playerId, text) {
+  state.privateMessages = [{
+    to: playerId,
+    text: text
+  }].concat(_toConsumableArray(state.privateMessages || [])).slice(0, 16);
+}
+function discardRequirement(player) {
+  var total = totalResources(player.resources);
+  return total >= 8 ? Math.floor(total / 2) : 0;
+}
+function pendingDiscardEntries(state) {
+  return Object.entries(state.pendingDiscards || {}).filter(function (_ref1) {
+    var _ref10 = _slicedToArray(_ref1, 2),
+      value = _ref10[1];
+    return value > 0;
+  });
+}
+function adjacentStealVictims(state, tileId, thiefId) {
+  var tile = state.board.tiles[tileId];
+  if (!tile) return [];
+  return _toConsumableArray(new Set(tile.corners.map(function (vertexId) {
+    var _state$buildings$vert2;
+    return (_state$buildings$vert2 = state.buildings[vertexId]) === null || _state$buildings$vert2 === void 0 ? void 0 : _state$buildings$vert2.player;
+  }).filter(function (playerId) {
+    return playerId !== undefined && playerId !== thiefId && totalResources(state.players[playerId].resources) > 0;
+  })));
+}
+function randomResourceKey(resources) {
+  var pool = RESOURCE_KEYS.flatMap(function (key) {
+    return Array(Number(resources[key] || 0)).fill(key);
+  });
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+}
+function startCriminalMove(state, actor) {
+  state.action = "criminal";
+  state.criminalMover = actor;
+  state.selectedTile = state.criminalTile;
+}
+function finishCriminalMove(state, actor, tileId) {
+  if (tileId === state.criminalTile) return false;
+  state.criminalTile = tileId;
+  addLog(state, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u304C".concat(tileName(state.board.tiles[tileId]), "\u3078\u79FB\u52D5\u3057\u307E\u3057\u305F\u3002"));
+  var victims = adjacentStealVictims(state, tileId, actor);
+  if (victims.length) {
+    state.pendingSteal = {
+      thief: actor,
+      victims: victims
+    };
+    state.action = "steal";
+    addLog(state, "".concat(state.players[actor].name, " \u304C\u596A\u3046\u76F8\u624B\u3092\u9078\u3073\u307E\u3059\u3002"));
+  } else {
+    state.pendingSteal = null;
+    state.criminalMover = null;
+    state.action = state.rolled ? "build" : "roll";
+  }
+  return true;
+}
 function getVp(state, playerId) {
   var planets = Object.values(state.buildings).filter(function (b) {
     return b.player === playerId && b.type === "planet";
@@ -646,9 +707,21 @@ function refreshBonuses(state) {
 }
 function produce(state, total) {
   if (total === 7) {
-    addLog(state, "7が出ました。ユニヴァース クリミナルを任意のタイルへ移動できます。");
-    state.action = "criminal";
-    state.selectedTile = state.criminalTile;
+    var pending = Object.fromEntries(state.players.map(function (player) {
+      return [player.id, discardRequirement(player)];
+    }).filter(function (_ref11) {
+      var _ref12 = _slicedToArray(_ref11, 2),
+        need = _ref12[1];
+      return need > 0;
+    }));
+    state.pendingDiscards = pending;
+    if (pendingDiscardEntries(state).length) {
+      state.action = "discard";
+      addLog(state, "7が出ました。資源8枚以上のプレイヤーは半分を捨てます。");
+    } else {
+      addLog(state, "7が出ました。ユニヴァース クリミナルを任意のタイルへ移動できます。");
+      startCriminalMove(state, state.turn);
+    }
     return;
   }
   var gained = [];
@@ -693,16 +766,51 @@ function reducer(state, event) {
     return next;
   }
   if (event.type === "setAction") {
+    if (["discard", "steal"].includes(next.action)) return next;
     next.action = event.action;
     return next;
   }
   if (event.type === "selectTile") {
     next.selectedTile = event.tileId;
     if (next.action === "criminal") {
-      next.criminalTile = event.tileId;
-      addLog(next, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u304C".concat(tileName(next.board.tiles[event.tileId]), "\u3078\u79FB\u52D5\u3057\u307E\u3057\u305F\u3002"));
-      next.action = next.rolled ? "build" : "roll";
+      var _next$criminalMover;
+      if (event.tileId === next.criminalTile) return next;
+      finishCriminalMove(next, (_next$criminalMover = next.criminalMover) !== null && _next$criminalMover !== void 0 ? _next$criminalMover : actor, event.tileId);
     }
+    return next;
+  }
+  if (event.type === "discardResources") {
+    var _next$pendingDiscards;
+    var need = Number(((_next$pendingDiscards = next.pendingDiscards) === null || _next$pendingDiscards === void 0 ? void 0 : _next$pendingDiscards[actor]) || 0);
+    var bundle = cleanBundle(event.resources || {});
+    if (!need || totalResources(bundle) !== need || !hasResources(player, bundle)) return next;
+    RESOURCE_KEYS.forEach(function (key) {
+      player.resources[key] -= bundle[key] || 0;
+    });
+    delete next.pendingDiscards[actor];
+    addLog(next, "".concat(player.name, " \u304C\u8CC7\u6E90").concat(need, "\u679A\u3092\u6368\u3066\u307E\u3057\u305F\u3002"));
+    if (!pendingDiscardEntries(next).length) {
+      next.pendingDiscards = {};
+      addLog(next, "全員の廃棄が完了しました。ユニヴァース クリミナルを移動してください。");
+      startCriminalMove(next, next.turn);
+    }
+    return next;
+  }
+  if (event.type === "stealResource") {
+    var pending = next.pendingSteal;
+    var victimId = Number(event.victimId);
+    if (!pending || actor !== pending.thief || !pending.victims.includes(victimId)) return next;
+    var victim = next.players[victimId];
+    var stolen = randomResourceKey(victim.resources);
+    if (!stolen) return next;
+    victim.resources[stolen] -= 1;
+    next.players[actor].resources[stolen] += 1;
+    addLog(next, "".concat(next.players[actor].name, " \u304C ").concat(victim.name, " \u304B\u3089\u8CC7\u6E901\u679A\u3092\u596A\u3044\u307E\u3057\u305F\u3002"));
+    addPrivateMessage(next, actor, "".concat(victim.name, " \u304B\u3089 ").concat(RESOURCES[stolen].name, " \u3092\u596A\u3044\u307E\u3057\u305F\u3002"));
+    addPrivateMessage(next, victimId, "".concat(next.players[actor].name, " \u306B ").concat(RESOURCES[stolen].name, " \u3092\u596A\u308F\u308C\u307E\u3057\u305F\u3002"));
+    next.pendingSteal = null;
+    next.criminalMover = null;
+    next.action = next.rolled ? "build" : "roll";
     return next;
   }
   if (event.type === "roll") {
@@ -815,7 +923,7 @@ function reducer(state, event) {
     next.discard.push(type);
     if (type === "tv") {
       player.playedTv += 1;
-      next.action = "criminal";
+      startCriminalMove(next, actor);
       addLog(next, "".concat(player.name, " \u304CTV\u3092\u8D77\u52D5\u3002\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u307E\u3059\u3002"));
     }
     if (type === "route") {
@@ -957,14 +1065,14 @@ function tileName(tile) {
   if (tile.terrain === "desert") return "中性子星";
   return RESOURCES[tile.terrain].terrain;
 }
-function Cost(_ref1) {
-  var cost = _ref1.cost;
+function Cost(_ref13) {
+  var cost = _ref13.cost;
   return /*#__PURE__*/React.createElement("span", {
     className: "cost"
-  }, Object.entries(cost).map(function (_ref10) {
-    var _ref11 = _slicedToArray(_ref10, 2),
-      key = _ref11[0],
-      value = _ref11[1];
+  }, Object.entries(cost).map(function (_ref14) {
+    var _ref15 = _slicedToArray(_ref14, 2),
+      key = _ref15[0],
+      value = _ref15[1];
     return /*#__PURE__*/React.createElement("span", {
       key: key,
       style: {
@@ -973,10 +1081,10 @@ function Cost(_ref1) {
     }, RESOURCES[key].name, " ", value);
   }));
 }
-function ResourceBundleInput(_ref12) {
-  var title = _ref12.title,
-    value = _ref12.value,
-    _onChange = _ref12.onChange;
+function ResourceBundleInput(_ref16) {
+  var title = _ref16.title,
+    value = _ref16.value,
+    _onChange = _ref16.onChange;
   return /*#__PURE__*/React.createElement("div", {
     className: "bundleInput"
   }, /*#__PURE__*/React.createElement("h3", null, title), RESOURCE_KEYS.map(function (key) {
@@ -996,11 +1104,11 @@ function ResourceBundleInput(_ref12) {
 function emptyBundle() {
   return emptyResources(0);
 }
-function NegotiationPanel(_ref13) {
+function NegotiationPanel(_ref17) {
   var _state$players$find$i, _state$players$find;
-  var state = _ref13.state,
-    myPlayerId = _ref13.myPlayerId,
-    onEvent = _ref13.onEvent;
+  var state = _ref17.state,
+    myPlayerId = _ref17.myPlayerId,
+    onEvent = _ref17.onEvent;
   var _useState = useState((myPlayerId + 1) % 4),
     _useState2 = _slicedToArray(_useState, 2),
     partnerId = _useState2[0],
@@ -1125,11 +1233,80 @@ function NegotiationPanel(_ref13) {
     }, line);
   }))));
 }
-function HelpPanel() {
-  var _useState7 = useState("rules"),
+function CriminalPanel(_ref18) {
+  var _state$pendingDiscard;
+  var state = _ref18.state,
+    myPlayerId = _ref18.myPlayerId,
+    onEvent = _ref18.onEvent;
+  var _useState7 = useState(emptyBundle),
     _useState8 = _slicedToArray(_useState7, 2),
-    tab = _useState8[0],
-    setTab = _useState8[1];
+    discardBundle = _useState8[0],
+    setDiscardBundle = _useState8[1];
+  var _useState9 = useState(""),
+    _useState0 = _slicedToArray(_useState9, 2),
+    victimId = _useState0[0],
+    setVictimId = _useState0[1];
+  var need = Number(((_state$pendingDiscard = state.pendingDiscards) === null || _state$pendingDiscard === void 0 ? void 0 : _state$pendingDiscard[myPlayerId]) || 0);
+  var pendingDiscardNames = pendingDiscardEntries(state).map(function (_ref19) {
+    var _ref20 = _slicedToArray(_ref19, 2),
+      playerId = _ref20[0],
+      needCount = _ref20[1];
+    return "".concat(state.players[playerId].name, ":").concat(needCount, "\u679A");
+  });
+  var pendingSteal = state.pendingSteal;
+  var canDiscard = need > 0 && totalResources(discardBundle) === need && hasResources(state.players[myPlayerId], cleanBundle(discardBundle));
+  var stealVictims = (pendingSteal === null || pendingSteal === void 0 ? void 0 : pendingSteal.victims) || [];
+  var selectedVictim = victimId || stealVictims[0];
+  if (state.action !== "discard" && state.action !== "criminal" && state.action !== "steal") return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "criminalPanel"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB"), state.action === "discard" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, "\u5EC3\u68C4\u5F85\u3061: ", pendingDiscardNames.join(" / ")), need > 0 ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "\u6368\u3066\u308B\u8CC7\u6E90 ".concat(need, "\u679A"),
+    value: discardBundle,
+    onChange: setDiscardBundle
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "discardResources",
+        resources: discardBundle
+      });
+    },
+    disabled: !canDiscard
+  }, "\u8CC7\u6E90\u3092\u6368\u3066\u308B")) : /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, "\u3042\u306A\u305F\u306F\u5EC3\u68C4\u5BFE\u8C61\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002")), state.action === "criminal" && /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, "\u73FE\u5728\u5730\u4EE5\u5916\u306E\u30BF\u30A4\u30EB\u3092\u30AF\u30EA\u30C3\u30AF\u3057\u3066\u79FB\u52D5\u3057\u307E\u3059\u3002\u79FB\u52D5\u5F8C\u3001\u96A3\u63A5\u30D7\u30EC\u30A4\u30E4\u30FC\u304B\u30891\u679A\u596A\u3048\u307E\u3059\u3002"), state.action === "steal" && pendingSteal && /*#__PURE__*/React.createElement(React.Fragment, null, pendingSteal.thief === myPlayerId ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+    className: "partnerSelect"
+  }, "\u596A\u3046\u76F8\u624B", /*#__PURE__*/React.createElement("select", {
+    value: selectedVictim,
+    onChange: function onChange(event) {
+      return setVictimId(Number(event.target.value));
+    }
+  }, stealVictims.map(function (playerId) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: playerId,
+      value: playerId
+    }, state.players[playerId].name);
+  }))), /*#__PURE__*/React.createElement("button", {
+    className: "primary",
+    onClick: function onClick() {
+      return onEvent({
+        type: "stealResource",
+        victimId: Number(selectedVictim)
+      });
+    }
+  }, "\u8CC7\u6E901\u679A\u3092\u596A\u3046")) : /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, state.players[pendingSteal.thief].name, " \u304C\u596A\u3046\u76F8\u624B\u3092\u9078\u3093\u3067\u3044\u307E\u3059\u3002")));
+}
+function HelpPanel() {
+  var _useState1 = useState("rules"),
+    _useState10 = _slicedToArray(_useState1, 2),
+    tab = _useState10[0],
+    setTab = _useState10[1];
   return /*#__PURE__*/React.createElement("div", {
     className: "helpBox"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1160,14 +1337,14 @@ function HelpPanel() {
   }, /*#__PURE__*/React.createElement("h2", null, "\u65B0\u5929\u5730\u30AB\u30FC\u30C9"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TV"), /*#__PURE__*/React.createElement("dd", null, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u307E\u3059\u30023\u679A\u4EE5\u4E0A\u3067\u6700\u5927TV\u306E\u5019\u88DC\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u822A\u8DEF\u6574\u5099"), /*#__PURE__*/React.createElement("dd", null, "\u7121\u6599\u3067\u661F\u9593\u822A\u8DEF\u30922\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5FB4\u53CE"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u3092\u4ED6\u30D7\u30EC\u30A4\u30E4\u30FC\u5168\u54E1\u304B\u3089\u96C6\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u88DC\u7D66\u885B\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u30922\u3064\u53D7\u3051\u53D6\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u52DD\u5229\u8A18\u9332"), /*#__PURE__*/React.createElement("dd", null, "\u6301\u3063\u3066\u3044\u308B\u3060\u3051\u30671 VP\u3067\u3059\u3002")))));
 }
 function usePeerRoom(state, setState, roomId, myPlayerId) {
-  var _useState9 = useState({
+  var _useState11 = useState({
       mode: "local",
       status: "ローカル",
       share: ""
     }),
-    _useState0 = _slicedToArray(_useState9, 2),
-    net = _useState0[0],
-    setNet = _useState0[1];
+    _useState12 = _slicedToArray(_useState11, 2),
+    net = _useState12[0],
+    setNet = _useState12[1];
   var peerRef = useRef(null);
   var connections = useRef([]);
   var stateRef = useRef(state);
@@ -1292,10 +1469,10 @@ function usePeerRoom(state, setState, roomId, myPlayerId) {
     send: send
   };
 }
-function Board(_ref14) {
-  var state = _ref14.state,
-    onEvent = _ref14.onEvent,
-    myPlayerId = _ref14.myPlayerId;
+function Board(_ref21) {
+  var state = _ref21.state,
+    onEvent = _ref21.onEvent,
+    myPlayerId = _ref21.myPlayerId;
   var active = currentPlayer(state).id;
   var canClick = state.phase === "setup" ? active === myPlayerId : state.turn === myPlayerId;
   return /*#__PURE__*/React.createElement("svg", {
@@ -1452,33 +1629,33 @@ function App() {
   var initialRoom = useMemo(function () {
     return new URLSearchParams(location.hash.replace("#", "")).get("room") || crypto.randomUUID().slice(0, 8);
   }, []);
-  var _useState1 = useState(function () {
+  var _useState13 = useState(function () {
       return createGame(initialRoom);
     }),
-    _useState10 = _slicedToArray(_useState1, 2),
-    state = _useState10[0],
-    setState = _useState10[1];
-  var _useState11 = useState(function () {
+    _useState14 = _slicedToArray(_useState13, 2),
+    state = _useState14[0],
+    setState = _useState14[1];
+  var _useState15 = useState(function () {
       return Number(new URLSearchParams(location.hash.replace("#", "")).get("p") || 0);
     }),
-    _useState12 = _slicedToArray(_useState11, 2),
-    myPlayerId = _useState12[0],
-    setMyPlayerId = _useState12[1];
-  var _useState13 = useState({
+    _useState16 = _slicedToArray(_useState15, 2),
+    myPlayerId = _useState16[0],
+    setMyPlayerId = _useState16[1];
+  var _useState17 = useState({
       give: "rock",
       take: "food"
     }),
-    _useState14 = _slicedToArray(_useState13, 2),
-    trade = _useState14[0],
-    setTrade = _useState14[1];
-  var _useState15 = useState({
+    _useState18 = _slicedToArray(_useState17, 2),
+    trade = _useState18[0],
+    setTrade = _useState18[1];
+  var _useState19 = useState({
       resource: "rock",
       a: "rock",
       b: "material"
     }),
-    _useState16 = _slicedToArray(_useState15, 2),
-    devChoice = _useState16[0],
-    setDevChoice = _useState16[1];
+    _useState20 = _slicedToArray(_useState19, 2),
+    devChoice = _useState20[0],
+    setDevChoice = _useState20[1];
   var _usePeerRoom = usePeerRoom(state, setState, state.id, myPlayerId),
     net = _usePeerRoom.net,
     host = _usePeerRoom.host,
@@ -1526,7 +1703,7 @@ function App() {
     className: "pill"
   }, "\u30D5\u30A7\u30FC\u30BA: ", state.phase === "setup" ? "初期配置" : state.rolled ? "交易・建設" : "サイコロ"), /*#__PURE__*/React.createElement("span", {
     className: "pill"
-  }, "\u64CD\u4F5C: ", BUILD_LABEL[state.action] || (state.action === "criminal" ? "ユニヴァース クリミナル" : state.action)), state.dice && /*#__PURE__*/React.createElement("span", {
+  }, "\u64CD\u4F5C: ", BUILD_LABEL[state.action] || (state.action === "criminal" ? "ユニヴァース クリミナル" : state.action === "discard" ? "資源廃棄" : state.action === "steal" ? "資源奪取" : state.action)), state.dice && /*#__PURE__*/React.createElement("span", {
     className: "pill"
   }, "\u51FA\u76EE: ", state.dice.join(" + "), " = ", state.dice[0] + state.dice[1])), /*#__PURE__*/React.createElement(Board, {
     state: state,
@@ -1670,7 +1847,11 @@ function App() {
     }
   }, "\u4EA4\u63DB"), /*#__PURE__*/React.createElement("p", {
     className: "spaceportNote"
-  }, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8: ", spaceportText(state, myPlayerId))), /*#__PURE__*/React.createElement(NegotiationPanel, {
+  }, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8: ", spaceportText(state, myPlayerId))), /*#__PURE__*/React.createElement(CriminalPanel, {
+    state: state,
+    myPlayerId: myPlayerId,
+    onEvent: act
+  }), /*#__PURE__*/React.createElement(NegotiationPanel, {
     state: state,
     myPlayerId: myPlayerId,
     onEvent: act
@@ -1747,7 +1928,14 @@ function App() {
     className: "log"
   }, /*#__PURE__*/React.createElement("h2", null, "\u822A\u884C\u30ED\u30B0"), state.winner !== null && /*#__PURE__*/React.createElement("div", {
     className: "winner"
-  }, state.players[state.winner].name, " \u306E\u52DD\u5229"), state.log.map(function (line, index) {
+  }, state.players[state.winner].name, " \u306E\u52DD\u5229"), (state.privateMessages || []).filter(function (message) {
+    return message.to === myPlayerId;
+  }).map(function (message, index) {
+    return /*#__PURE__*/React.createElement("p", {
+      className: "privateLog",
+      key: "private-".concat(index)
+    }, message.text);
+  }), state.log.map(function (line, index) {
     return /*#__PURE__*/React.createElement("p", {
       key: index
     }, line);

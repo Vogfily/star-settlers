@@ -260,6 +260,7 @@ h2 {
 
 .costs,
 .trade,
+.criminalPanel,
 .negotiation,
 .frontiers,
 .helpBox {
@@ -300,6 +301,11 @@ h2 {
   flex-basis: 100%;
   color: #b9c6da;
   font-size: 12px;
+}
+
+.criminalPanel {
+  display: grid;
+  gap: 10px;
 }
 
 .negotiation {
@@ -520,6 +526,10 @@ h2 {
   padding: 7px 0;
   color: #cbd6e7;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.log .privateLog {
+  color: #fff3a8;
 }
 
 .winner {
