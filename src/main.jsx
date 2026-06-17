@@ -37,6 +37,12 @@ const COSTS = {
   frontier: { rare: 1, nano: 1, food: 1 },
 };
 
+const BUILD_LIMITS = {
+  route: 15,
+  planet: 5,
+  star: 4,
+};
+
 const DEV_DECK = [
   ...Array(14).fill("tv"),
   ...Array(2).fill("route"),
@@ -102,7 +108,29 @@ const TILE_SETUP = [
   "food",
   "nano",
 ];
-const NUMBERS = [5, 2, 6, 3, 8, 10, 9, 12, 11, 4, 8, 10, 9, 4, 5, 6, 3, 11];
+const RESOURCE_TILE_SETUP = TILE_SETUP.filter((tile) => tile !== "desert");
+const FIXED_NUMBER_BY_TILE = {
+  1: 11,
+  2: 12,
+  3: 9,
+  4: 4,
+  5: 6,
+  6: 5,
+  7: 10,
+  8: null,
+  9: 3,
+  10: 11,
+  11: 4,
+  12: 8,
+  13: 8,
+  14: 10,
+  15: 9,
+  16: 3,
+  17: 5,
+  18: 2,
+  19: 6,
+};
+const NEUTRON_TILE_NUMBER = 8;
 const HEX_COORDS = [];
 for (let q = -2; q <= 2; q += 1) {
   const r1 = Math.max(-2, -q - 2);
@@ -253,16 +281,15 @@ function visualTileNumberMap() {
 
 function makeBoard(seedText) {
   const random = mulberry32(hashString(seedText));
-  const terrains = shuffle(TILE_SETUP, random);
-  const nums = shuffle(NUMBERS, random);
   const boardNumbers = visualTileNumberMap();
-  let numIndex = 0;
+  const shuffledResources = shuffle(RESOURCE_TILE_SETUP, random);
   const vertices = new Map();
   const edges = new Map();
   const tiles = HEX_COORDS.map((coord, index) => {
     const center = hexToPixel(coord.q, coord.r);
-    const terrain = terrains[index];
-    const number = terrain === "desert" ? null : nums[numIndex++];
+    const boardNumber = boardNumbers.get(`${coord.q}:${coord.r}`);
+    const terrain = boardNumber === NEUTRON_TILE_NUMBER ? "desert" : shuffledResources.pop();
+    const number = FIXED_NUMBER_BY_TILE[boardNumber] ?? null;
     const corners = Array.from({ length: 6 }, (_, i) => {
       const angle = (Math.PI / 180) * (60 * i - 30);
       const point = {
@@ -279,7 +306,7 @@ function makeBoard(seedText) {
       if (!edges.has(key)) edges.set(key, { id: key, a: corners[i], b: corners[(i + 1) % 6], tiles: [] });
       edges.get(key).tiles.push(index);
     }
-    return { id: index, boardNumber: boardNumbers.get(`${coord.q}:${coord.r}`), ...coord, center, terrain, number, corners };
+    return { id: index, boardNumber, ...coord, center, terrain, number, corners };
   });
 
   const vertexList = [...vertices.values()];
@@ -345,6 +372,7 @@ function createGame(roomId = crypto.randomUUID().slice(0, 8)) {
       resources: emptyResources(),
       hiddenNewFrontiers: [],
       playedNewFrontiers: [],
+      frontierPlayedTurn: null,
       playedTv: 0,
       bonus: { longest: false, largestTv: false },
     })),
@@ -355,6 +383,7 @@ function createGame(roomId = crypto.randomUUID().slice(0, 8)) {
     turn: 0,
     turnCount: 0,
     phase: "setup",
+    turnStage: "setup",
     setupStep: 0,
     setupOrder: [0, 1, 2, 3, 3, 2, 1, 0],
     setupPendingVertex: null,
@@ -401,7 +430,7 @@ function frontierBoughtTurn(card) {
 }
 
 function canPlayFrontier(card, state) {
-  return frontierType(card) !== "point" && frontierBoughtTurn(card) < state.turnCount;
+  return frontierBoughtTurn(card) < state.turnCount;
 }
 
 function publicPlayedFrontiers(player) {
@@ -438,6 +467,17 @@ function currentPlayer(state) {
   return state.players[active];
 }
 
+function phaseLabel(state) {
+  if (state.phase === "setup") return "初期配置";
+  if (state.turnStage === "roll") return "サイコロ";
+  if (state.turnStage === "production") return "資源獲得";
+  return "メインフェーズ";
+}
+
+function isMainPhase(state) {
+  return state.phase === "play" && state.turnStage === "main";
+}
+
 function addLog(state, text) {
   state.log = [text, ...state.log].slice(0, 8);
 }
@@ -472,6 +512,7 @@ function randomResourceKey(resources) {
 
 function startCriminalMove(state, actor) {
   state.action = "criminal";
+  state.turnStage = "production";
   state.criminalMover = actor;
   state.selectedTile = state.criminalTile;
 }
@@ -488,7 +529,13 @@ function finishCriminalMove(state, actor, tileId) {
   } else {
     state.pendingSteal = null;
     state.criminalMover = null;
-    state.action = state.rolled ? "build" : "roll";
+    if (state.rolled) {
+      state.turnStage = "main";
+      state.action = "build";
+    } else {
+      state.turnStage = "roll";
+      state.action = "roll";
+    }
   }
   return true;
 }
@@ -497,8 +544,9 @@ function getVp(state, playerId) {
   const planets = Object.values(state.buildings).filter((b) => b.player === playerId && b.type === "planet").length;
   const stars = Object.values(state.buildings).filter((b) => b.player === playerId && b.type === "star").length;
   const points = state.players[playerId].hiddenNewFrontiers.filter((card) => frontierType(card) === "point").length;
+  const publicPoints = (state.players[playerId].playedNewFrontiers || []).filter((card) => card === "point").length;
   const bonus = (state.players[playerId].bonus.longest ? 2 : 0) + (state.players[playerId].bonus.largestTv ? 2 : 0);
-  return planets + stars * 2 + points + bonus;
+  return planets + stars * 2 + points + publicPoints + bonus;
 }
 
 function distanceRule(state, vertexId) {
@@ -509,12 +557,14 @@ function routeTouchesOwnNetwork(state, edge, playerId) {
   return [edge.a, edge.b].some((vertexId) => {
     const building = state.buildings[vertexId];
     if (building?.player === playerId) return true;
+    if (building && building.player !== playerId) return false;
     return state.board.incidentEdges[vertexId].some((edgeId) => state.routes[edgeId]?.player === playerId);
   });
 }
 
 function canBuildRoute(state, edgeId, playerId, free = false) {
   if (state.routes[edgeId]) return false;
+  if (countRoutes(state, playerId) >= BUILD_LIMITS.route) return false;
   const edge = state.board.edges.find((item) => item.id === edgeId);
   if (!edge) return false;
   if (state.phase === "setup") return state.setupPendingVertex && [edge.a, edge.b].includes(state.setupPendingVertex);
@@ -523,31 +573,83 @@ function canBuildRoute(state, edgeId, playerId, free = false) {
 
 function canBuildPlanet(state, vertexId, playerId) {
   if (state.buildings[vertexId] || !distanceRule(state, vertexId)) return false;
+  if (countBuildings(state, playerId, "planet") >= BUILD_LIMITS.planet) return false;
   if (state.phase === "setup") return !state.setupPendingVertex;
   if (!canAfford(state.players[playerId], COSTS.planet)) return false;
   return state.board.incidentEdges[vertexId].some((edgeId) => state.routes[edgeId]?.player === playerId);
 }
 
-function refreshBonuses(state) {
-  state.players.forEach((player) => {
-    player.bonus.longest = false;
-    player.bonus.largestTv = false;
-  });
-  let tvLeader = null;
-  state.players.forEach((player) => {
-    if (player.playedTv >= 3 && (!tvLeader || player.playedTv > tvLeader.playedTv)) tvLeader = player;
-  });
-  if (tvLeader) tvLeader.bonus.largestTv = true;
+function countBuildings(state, playerId, type) {
+  return Object.values(state.buildings).filter((building) => building.player === playerId && building.type === type).length;
+}
 
-  const routeCounts = state.players.map((player) => ({
-    id: player.id,
-    count: Object.values(state.routes).filter((route) => route.player === player.id).length,
-  }));
-  const routeLeader = routeCounts.sort((a, b) => b.count - a.count)[0];
-  if (routeLeader?.count >= 5) state.players[routeLeader.id].bonus.longest = true;
+function countRoutes(state, playerId) {
+  return Object.values(state.routes).filter((route) => route.player === playerId).length;
+}
+
+function isBlockedVertex(state, vertexId, playerId) {
+  const building = state.buildings[vertexId];
+  return building && building.player !== playerId;
+}
+
+function longestRouteLength(state, playerId) {
+  const ownEdges = new Set(Object.entries(state.routes).filter(([, route]) => route.player === playerId).map(([edgeId]) => edgeId));
+  if (!ownEdges.size) return 0;
+  const edgeById = Object.fromEntries(state.board.edges.map((edge) => [edge.id, edge]));
+
+  function walk(vertexId, used) {
+    if (isBlockedVertex(state, vertexId, playerId)) return 0;
+    let best = 0;
+    for (const edgeId of state.board.incidentEdges[vertexId] || []) {
+      if (!ownEdges.has(edgeId) || used.has(edgeId)) continue;
+      const edge = edgeById[edgeId];
+      const nextVertex = edge.a === vertexId ? edge.b : edge.a;
+      const nextUsed = new Set(used);
+      nextUsed.add(edgeId);
+      best = Math.max(best, 1 + walk(nextVertex, nextUsed));
+    }
+    return best;
+  }
+
+  let best = 0;
+  for (const edgeId of ownEdges) {
+    const edge = edgeById[edgeId];
+    best = Math.max(best, 1 + walk(edge.a, new Set([edgeId])), 1 + walk(edge.b, new Set([edgeId])));
+  }
+  return best;
+}
+
+function refreshBonuses(state) {
+  const currentLongest = state.players.find((player) => player.bonus.longest);
+  const currentTv = state.players.find((player) => player.bonus.largestTv);
+  const currentLongestLength = currentLongest ? longestRouteLength(state, currentLongest.id) : 4;
+  const currentTvCount = currentTv ? currentTv.playedTv : 2;
+  if (currentLongest && currentLongestLength < 5) {
+    currentLongest.bonus.longest = false;
+  }
+  const routeLeader = state.players
+    .map((player) => ({ id: player.id, length: longestRouteLength(state, player.id) }))
+    .filter((entry) => entry.length >= 5 && entry.length > (currentLongestLength >= 5 ? currentLongestLength : 4))
+    .sort((a, b) => b.length - a.length)[0];
+  const tvLeader = state.players
+    .map((player) => ({ id: player.id, count: player.playedTv }))
+    .filter((entry) => entry.count >= 3 && entry.count > currentTvCount)
+    .sort((a, b) => b.count - a.count)[0];
+
+  if (routeLeader) {
+    state.players.forEach((player) => {
+      player.bonus.longest = player.id === routeLeader.id;
+    });
+  }
+  if (tvLeader) {
+    state.players.forEach((player) => {
+      player.bonus.largestTv = player.id === tvLeader.id;
+    });
+  }
 }
 
 function produce(state, total) {
+  state.turnStage = "production";
   if (total === 7) {
     const pending = Object.fromEntries(
       state.players
@@ -576,6 +678,7 @@ function produce(state, total) {
     });
   });
   addLog(state, gained.length ? `産出 ${total}: ${gained.join(", ")}` : `産出 ${total}: 何も生まれませんでした。`);
+  state.turnStage = "main";
 }
 
 function moveTurn(state) {
@@ -590,6 +693,7 @@ function moveTurn(state) {
   state.turnCount = (state.turnCount || 0) + 1;
   state.rolled = false;
   state.dice = null;
+  state.turnStage = "roll";
   state.action = "roll";
   addLog(state, `${state.players[state.turn].name} のターンです。`);
 }
@@ -631,6 +735,8 @@ function reducer(state, event) {
       next.pendingDiscards = {};
       addLog(next, "全員の廃棄が完了しました。ユニヴァース クリミナルを移動してください。");
       startCriminalMove(next, next.turn);
+    } else {
+      next.turnStage = "production";
     }
     return next;
   }
@@ -648,6 +754,7 @@ function reducer(state, event) {
     addPrivateMessage(next, victimId, `${next.players[actor].name} に ${RESOURCES[stolen].name} を奪われました。`);
     next.pendingSteal = null;
     next.criminalMover = null;
+    next.turnStage = next.rolled ? "main" : "roll";
     next.action = next.rolled ? "build" : "roll";
     return next;
   }
@@ -657,8 +764,8 @@ function reducer(state, event) {
     const d2 = Math.floor(Math.random() * 6) + 1;
     next.dice = [d1, d2];
     next.rolled = true;
-    next.action = "build";
     produce(next, d1 + d2);
+    if (next.turnStage === "main") next.action = "build";
     return next;
   }
   if (event.type === "vertex") {
@@ -672,14 +779,14 @@ function reducer(state, event) {
       addLog(next, `${player.name} が惑星を配置しました。星間航路を接続してください。`);
       return next;
     }
-    if (actor !== next.turn || !next.rolled) return next;
+    if (actor !== next.turn || !isMainPhase(next)) return next;
     if (next.action === "planet" && canBuildPlanet(next, vertexId, actor)) {
       pay(player, COSTS.planet);
       next.buildings[vertexId] = { player: actor, type: "planet" };
       addLog(next, `${player.name} が惑星を建設しました。`);
     } else if (next.action === "star") {
       const building = next.buildings[vertexId];
-      if (building?.player === actor && building.type === "planet" && canAfford(player, COSTS.star)) {
+      if (building?.player === actor && building.type === "planet" && countBuildings(next, actor, "star") < BUILD_LIMITS.star && canAfford(player, COSTS.star)) {
         pay(player, COSTS.star);
         building.type = "star";
         addLog(next, `${player.name} が惑星を恒星へ強化しました。`);
@@ -706,6 +813,7 @@ function reducer(state, event) {
         next.phase = "play";
         next.turn = 0;
         next.rolled = false;
+        next.turnStage = "roll";
         next.action = "roll";
         addLog(next, "初期配置完了。最初のプレイヤーからサイコロを振ります。");
       } else {
@@ -714,7 +822,7 @@ function reducer(state, event) {
       }
       return next;
     }
-    if (actor !== next.turn || !next.rolled || !canBuildRoute(next, edgeId, actor, free)) return next;
+    if (actor !== next.turn || !isMainPhase(next) || !canBuildRoute(next, edgeId, actor, free)) return next;
     if (!free) pay(player, COSTS.route);
     next.routes[edgeId] = { player: actor };
     if (next.action === "freeRoute") {
@@ -726,7 +834,7 @@ function reducer(state, event) {
     return next;
   }
   if (event.type === "buyDev") {
-    if (actor !== next.turn || !next.rolled || !canAfford(player, COSTS.frontier) || next.deck.length === 0) return next;
+    if (actor !== next.turn || !isMainPhase(next) || !canAfford(player, COSTS.frontier) || next.deck.length === 0) return next;
     pay(player, COSTS.frontier);
     const card = next.deck.pop();
     player.hiddenNewFrontiers.push({ type: card, boughtTurn: next.turnCount || 0 });
@@ -734,13 +842,18 @@ function reducer(state, event) {
     return next;
   }
   if (event.type === "playDev") {
+    if (player.frontierPlayedTurn === next.turnCount) return next;
     const cardIndex = player.hiddenNewFrontiers.findIndex((card) => frontierType(card) === event.card && canPlayFrontier(card, next));
-    if (actor !== next.turn || cardIndex < 0) return next;
+    if (actor !== next.turn || !isMainPhase(next) || cardIndex < 0) return next;
     const card = player.hiddenNewFrontiers.splice(cardIndex, 1)[0];
     const type = frontierType(card);
     player.playedNewFrontiers = player.playedNewFrontiers || [];
     player.playedNewFrontiers.push(type);
+    player.frontierPlayedTurn = next.turnCount;
     next.discard.push(type);
+    if (type === "point") {
+      addLog(next, `${player.name} が勝利記録を公開しました。`);
+    }
     if (type === "tv") {
       player.playedTv += 1;
       startCriminalMove(next, actor);
@@ -772,7 +885,7 @@ function reducer(state, event) {
   }
   if (event.type === "bankTrade") {
     const rate = tradeRateFor(next, actor, event.give);
-    if (actor !== next.turn || !next.rolled || (player.resources[event.give] || 0) < rate) return next;
+    if (actor !== next.turn || !isMainPhase(next) || (player.resources[event.give] || 0) < rate) return next;
     player.resources[event.give] -= rate;
     player.resources[event.take] += 1;
     addLog(next, `${player.name} が${rate}:1通信交易を行いました。`);
@@ -781,7 +894,7 @@ function reducer(state, event) {
   if (event.type === "startNegotiation") {
     const offer = { turnGives: cleanBundle(event.turnGives), partnerGives: cleanBundle(event.partnerGives) };
     const partnerId = Number(event.partnerId);
-    if (actor !== next.turn || !next.rolled || next.negotiation || partnerId === actor || !next.players[partnerId]) return next;
+    if (actor !== next.turn || !isMainPhase(next) || next.negotiation || partnerId === actor || !next.players[partnerId]) return next;
     if (!canPlayerOffer(next, partnerId, offer)) return next;
     next.negotiation = {
       id: crypto.randomUUID(),
@@ -931,8 +1044,7 @@ function NegotiationPanel({ state, myPlayerId, onEvent }) {
   const selectedPartner = state.players[partnerId] ? partnerId : state.players.find((player) => player.id !== myPlayerId)?.id ?? 0;
   const canStart =
     isTurnPlayer &&
-    state.phase === "play" &&
-    state.rolled &&
+    isMainPhase(state) &&
     !negotiation &&
     selectedPartner !== myPlayerId &&
     canPlayerOffer(state, selectedPartner, draftOffer);
@@ -1121,7 +1233,8 @@ function HelpPanel() {
           <p>サイコロで資源を得て、惑星、恒星、星間航路を広げます。10 VPに到達したプレイヤーが勝利です。</p>
           <ul>
             <li>初期配置では各プレイヤーが惑星と星間航路を2セット置きます。</li>
-            <li>自分の番はサイコロ、交易、建設、新天地の順に進められます。</li>
+            <li>自分の番はサイコロ、資源獲得、メインフェーズの順に進みます。</li>
+            <li>メインフェーズでは交換、建設、新天地、交渉を行えます。</li>
             <li>出目と同じ数字のタイルに隣接する惑星は資源1、恒星は資源2を得ます。</li>
             <li>7が出たらユニヴァース クリミナルを移動し、そのタイルは産出しません。</li>
             <li>スペースポートに接する惑星か恒星があると、2:1または3:1交易が使えます。</li>
@@ -1358,6 +1471,7 @@ function App() {
   const me = state.players[myPlayerId];
   const active = currentPlayer(state);
   const actionable = state.phase === "setup" ? active.id === myPlayerId : state.turn === myPlayerId;
+  const mainActionable = actionable && isMainPhase(state);
   const currentTradeRate = tradeRateFor(state, myPlayerId, trade.give);
 
   return (
@@ -1386,7 +1500,7 @@ function App() {
         <div className="playSurface">
           <div className="statusLine">
             <span className="pill">現在: {active.name}</span>
-            <span className="pill">フェーズ: {state.phase === "setup" ? "初期配置" : state.rolled ? "交易・建設" : "サイコロ"}</span>
+            <span className="pill">フェーズ: {phaseLabel(state)}</span>
             <span className="pill">操作: {BUILD_LABEL[state.action] || (state.action === "criminal" ? "ユニヴァース クリミナル" : state.action === "discard" ? "資源廃棄" : state.action === "steal" ? "資源奪取" : state.action)}</span>
             {state.dice && <span className="pill">出目: {state.dice.join(" + ")} = {state.dice[0] + state.dice[1]}</span>}
           </div>
@@ -1412,7 +1526,7 @@ function App() {
             <button className="primary" onClick={() => act({ type: "roll" })} disabled={!actionable || state.phase !== "play" || state.rolled}>
               <Dice5 size={18} /> サイコロ
             </button>
-            <button onClick={() => act({ type: "endTurn" })} disabled={!actionable || state.phase !== "play" || !!state.negotiation}>
+            <button onClick={() => act({ type: "endTurn" })} disabled={!mainActionable || !!state.negotiation}>
               <Undo2 size={18} /> ターン終了
             </button>
           </div>
@@ -1438,7 +1552,7 @@ function App() {
             <p>惑星 <Cost cost={COSTS.planet} /></p>
             <p>恒星 <Cost cost={COSTS.star} /></p>
             <p>新天地 <Cost cost={COSTS.frontier} /></p>
-            <button onClick={() => act({ type: "buyDev" })} disabled={!actionable || !state.rolled}>
+            <button onClick={() => act({ type: "buyDev" })} disabled={!mainActionable}>
               <Shuffle size={17} /> 新天地を獲得
             </button>
           </div>
@@ -1452,7 +1566,7 @@ function App() {
             <select value={trade.take} onChange={(e) => setTrade({ ...trade, take: e.target.value })}>
               {RESOURCE_KEYS.map((key) => <option key={key} value={key}>{RESOURCES[key].name}</option>)}
             </select>
-            <button onClick={() => act({ type: "bankTrade", ...trade })}>交換</button>
+            <button onClick={() => act({ type: "bankTrade", ...trade })} disabled={!mainActionable}>交換</button>
             <p className="spaceportNote">スペースポート: {spaceportText(state, myPlayerId)}</p>
           </div>
 

@@ -1,4 +1,5 @@
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
@@ -137,6 +138,11 @@ var COSTS = {
     food: 1
   }
 };
+var BUILD_LIMITS = {
+  route: 15,
+  planet: 5,
+  star: 4
+};
 var DEV_DECK = [].concat(_toConsumableArray(Array(14).fill("tv")), _toConsumableArray(Array(2).fill("route")), _toConsumableArray(Array(2).fill("collect")), _toConsumableArray(Array(2).fill("plenty")), _toConsumableArray(Array(5).fill("point")));
 var DEV_NAMES = {
   tv: "TV",
@@ -197,7 +203,31 @@ var BUILD_LABEL = {
   frontier: "新天地"
 };
 var TILE_SETUP = ["material", "nano", "rock", "food", "rare", "rock", "food", "material", "nano", "desert", "material", "rare", "material", "food", "nano", "rock", "rare", "food", "nano"];
-var NUMBERS = [5, 2, 6, 3, 8, 10, 9, 12, 11, 4, 8, 10, 9, 4, 5, 6, 3, 11];
+var RESOURCE_TILE_SETUP = TILE_SETUP.filter(function (tile) {
+  return tile !== "desert";
+});
+var FIXED_NUMBER_BY_TILE = {
+  1: 11,
+  2: 12,
+  3: 9,
+  4: 4,
+  5: 6,
+  6: 5,
+  7: 10,
+  8: null,
+  9: 3,
+  10: 11,
+  11: 4,
+  12: 8,
+  13: 8,
+  14: 10,
+  15: 9,
+  16: 3,
+  17: 5,
+  18: 2,
+  19: 6
+};
+var NEUTRON_TILE_NUMBER = 8;
 var HEX_COORDS = [];
 for (var q = -2; q <= 2; q += 1) {
   var r1 = Math.max(-2, -q - 2);
@@ -347,16 +377,16 @@ function visualTileNumberMap() {
 }
 function makeBoard(seedText) {
   var random = mulberry32(hashString(seedText));
-  var terrains = shuffle(TILE_SETUP, random);
-  var nums = shuffle(NUMBERS, random);
   var boardNumbers = visualTileNumberMap();
-  var numIndex = 0;
+  var shuffledResources = shuffle(RESOURCE_TILE_SETUP, random);
   var vertices = new Map();
   var edges = new Map();
   var tiles = HEX_COORDS.map(function (coord, index) {
+    var _FIXED_NUMBER_BY_TILE;
     var center = hexToPixel(coord.q, coord.r);
-    var terrain = terrains[index];
-    var number = terrain === "desert" ? null : nums[numIndex++];
+    var boardNumber = boardNumbers.get("".concat(coord.q, ":").concat(coord.r));
+    var terrain = boardNumber === NEUTRON_TILE_NUMBER ? "desert" : shuffledResources.pop();
+    var number = (_FIXED_NUMBER_BY_TILE = FIXED_NUMBER_BY_TILE[boardNumber]) !== null && _FIXED_NUMBER_BY_TILE !== void 0 ? _FIXED_NUMBER_BY_TILE : null;
     var corners = Array.from({
       length: 6
     }, function (_, i) {
@@ -387,7 +417,7 @@ function makeBoard(seedText) {
     }
     return _objectSpread(_objectSpread({
       id: index,
-      boardNumber: boardNumbers.get("".concat(coord.q, ":").concat(coord.r))
+      boardNumber: boardNumber
     }, coord), {}, {
       center: center,
       terrain: terrain,
@@ -467,6 +497,7 @@ function createGame() {
         resources: emptyResources(),
         hiddenNewFrontiers: [],
         playedNewFrontiers: [],
+        frontierPlayedTurn: null,
         playedTv: 0,
         bonus: {
           longest: false,
@@ -481,6 +512,7 @@ function createGame() {
     turn: 0,
     turnCount: 0,
     phase: "setup",
+    turnStage: "setup",
     setupStep: 0,
     setupOrder: [0, 1, 2, 3, 3, 2, 1, 0],
     setupPendingVertex: null,
@@ -530,7 +562,7 @@ function frontierBoughtTurn(card) {
   return typeof card === "string" ? -1 : card.boughtTurn;
 }
 function canPlayFrontier(card, state) {
-  return frontierType(card) !== "point" && frontierBoughtTurn(card) < state.turnCount;
+  return frontierBoughtTurn(card) < state.turnCount;
 }
 function publicPlayedFrontiers(player) {
   var played = player.playedNewFrontiers || [];
@@ -575,6 +607,15 @@ function currentPlayer(state) {
   var active = state.phase === "setup" ? state.setupOrder[state.setupStep] : state.turn;
   return state.players[active];
 }
+function phaseLabel(state) {
+  if (state.phase === "setup") return "初期配置";
+  if (state.turnStage === "roll") return "サイコロ";
+  if (state.turnStage === "production") return "資源獲得";
+  return "メインフェーズ";
+}
+function isMainPhase(state) {
+  return state.phase === "play" && state.turnStage === "main";
+}
 function addLog(state, text) {
   state.log = [text].concat(_toConsumableArray(state.log)).slice(0, 8);
 }
@@ -613,6 +654,7 @@ function randomResourceKey(resources) {
 }
 function startCriminalMove(state, actor) {
   state.action = "criminal";
+  state.turnStage = "production";
   state.criminalMover = actor;
   state.selectedTile = state.criminalTile;
 }
@@ -631,7 +673,13 @@ function finishCriminalMove(state, actor, tileId) {
   } else {
     state.pendingSteal = null;
     state.criminalMover = null;
-    state.action = state.rolled ? "build" : "roll";
+    if (state.rolled) {
+      state.turnStage = "main";
+      state.action = "build";
+    } else {
+      state.turnStage = "roll";
+      state.action = "roll";
+    }
   }
   return true;
 }
@@ -645,8 +693,11 @@ function getVp(state, playerId) {
   var points = state.players[playerId].hiddenNewFrontiers.filter(function (card) {
     return frontierType(card) === "point";
   }).length;
+  var publicPoints = (state.players[playerId].playedNewFrontiers || []).filter(function (card) {
+    return card === "point";
+  }).length;
   var bonus = (state.players[playerId].bonus.longest ? 2 : 0) + (state.players[playerId].bonus.largestTv ? 2 : 0);
-  return planets + stars * 2 + points + bonus;
+  return planets + stars * 2 + points + publicPoints + bonus;
 }
 function distanceRule(state, vertexId) {
   return !state.board.adjacency[vertexId].some(function (next) {
@@ -657,6 +708,7 @@ function routeTouchesOwnNetwork(state, edge, playerId) {
   return [edge.a, edge.b].some(function (vertexId) {
     var building = state.buildings[vertexId];
     if ((building === null || building === void 0 ? void 0 : building.player) === playerId) return true;
+    if (building && building.player !== playerId) return false;
     return state.board.incidentEdges[vertexId].some(function (edgeId) {
       var _state$routes$edgeId;
       return ((_state$routes$edgeId = state.routes[edgeId]) === null || _state$routes$edgeId === void 0 ? void 0 : _state$routes$edgeId.player) === playerId;
@@ -666,6 +718,7 @@ function routeTouchesOwnNetwork(state, edge, playerId) {
 function canBuildRoute(state, edgeId, playerId) {
   var free = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
   if (state.routes[edgeId]) return false;
+  if (countRoutes(state, playerId) >= BUILD_LIMITS.route) return false;
   var edge = state.board.edges.find(function (item) {
     return item.id === edgeId;
   });
@@ -675,6 +728,7 @@ function canBuildRoute(state, edgeId, playerId) {
 }
 function canBuildPlanet(state, vertexId, playerId) {
   if (state.buildings[vertexId] || !distanceRule(state, vertexId)) return false;
+  if (countBuildings(state, playerId, "planet") >= BUILD_LIMITS.planet) return false;
   if (state.phase === "setup") return !state.setupPendingVertex;
   if (!canAfford(state.players[playerId], COSTS.planet)) return false;
   return state.board.incidentEdges[vertexId].some(function (edgeId) {
@@ -682,36 +736,123 @@ function canBuildPlanet(state, vertexId, playerId) {
     return ((_state$routes$edgeId2 = state.routes[edgeId]) === null || _state$routes$edgeId2 === void 0 ? void 0 : _state$routes$edgeId2.player) === playerId;
   });
 }
+function countBuildings(state, playerId, type) {
+  return Object.values(state.buildings).filter(function (building) {
+    return building.player === playerId && building.type === type;
+  }).length;
+}
+function countRoutes(state, playerId) {
+  return Object.values(state.routes).filter(function (route) {
+    return route.player === playerId;
+  }).length;
+}
+function isBlockedVertex(state, vertexId, playerId) {
+  var building = state.buildings[vertexId];
+  return building && building.player !== playerId;
+}
+function longestRouteLength(state, playerId) {
+  var ownEdges = new Set(Object.entries(state.routes).filter(function (_ref11) {
+    var _ref12 = _slicedToArray(_ref11, 2),
+      route = _ref12[1];
+    return route.player === playerId;
+  }).map(function (_ref13) {
+    var _ref14 = _slicedToArray(_ref13, 1),
+      edgeId = _ref14[0];
+    return edgeId;
+  }));
+  if (!ownEdges.size) return 0;
+  var edgeById = Object.fromEntries(state.board.edges.map(function (edge) {
+    return [edge.id, edge];
+  }));
+  function walk(vertexId, used) {
+    if (isBlockedVertex(state, vertexId, playerId)) return 0;
+    var best = 0;
+    var _iterator = _createForOfIteratorHelper(state.board.incidentEdges[vertexId] || []),
+      _step;
+    try {
+      for (_iterator.s(); !(_step = _iterator.n()).done;) {
+        var edgeId = _step.value;
+        if (!ownEdges.has(edgeId) || used.has(edgeId)) continue;
+        var edge = edgeById[edgeId];
+        var nextVertex = edge.a === vertexId ? edge.b : edge.a;
+        var nextUsed = new Set(used);
+        nextUsed.add(edgeId);
+        best = Math.max(best, 1 + walk(nextVertex, nextUsed));
+      }
+    } catch (err) {
+      _iterator.e(err);
+    } finally {
+      _iterator.f();
+    }
+    return best;
+  }
+  var best = 0;
+  var _iterator2 = _createForOfIteratorHelper(ownEdges),
+    _step2;
+  try {
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      var edgeId = _step2.value;
+      var edge = edgeById[edgeId];
+      best = Math.max(best, 1 + walk(edge.a, new Set([edgeId])), 1 + walk(edge.b, new Set([edgeId])));
+    }
+  } catch (err) {
+    _iterator2.e(err);
+  } finally {
+    _iterator2.f();
+  }
+  return best;
+}
 function refreshBonuses(state) {
-  state.players.forEach(function (player) {
-    player.bonus.longest = false;
-    player.bonus.largestTv = false;
+  var currentLongest = state.players.find(function (player) {
+    return player.bonus.longest;
   });
-  var tvLeader = null;
-  state.players.forEach(function (player) {
-    if (player.playedTv >= 3 && (!tvLeader || player.playedTv > tvLeader.playedTv)) tvLeader = player;
+  var currentTv = state.players.find(function (player) {
+    return player.bonus.largestTv;
   });
-  if (tvLeader) tvLeader.bonus.largestTv = true;
-  var routeCounts = state.players.map(function (player) {
+  var currentLongestLength = currentLongest ? longestRouteLength(state, currentLongest.id) : 4;
+  var currentTvCount = currentTv ? currentTv.playedTv : 2;
+  if (currentLongest && currentLongestLength < 5) {
+    currentLongest.bonus.longest = false;
+  }
+  var routeLeader = state.players.map(function (player) {
     return {
       id: player.id,
-      count: Object.values(state.routes).filter(function (route) {
-        return route.player === player.id;
-      }).length
+      length: longestRouteLength(state, player.id)
     };
-  });
-  var routeLeader = routeCounts.sort(function (a, b) {
+  }).filter(function (entry) {
+    return entry.length >= 5 && entry.length > (currentLongestLength >= 5 ? currentLongestLength : 4);
+  }).sort(function (a, b) {
+    return b.length - a.length;
+  })[0];
+  var tvLeader = state.players.map(function (player) {
+    return {
+      id: player.id,
+      count: player.playedTv
+    };
+  }).filter(function (entry) {
+    return entry.count >= 3 && entry.count > currentTvCount;
+  }).sort(function (a, b) {
     return b.count - a.count;
   })[0];
-  if ((routeLeader === null || routeLeader === void 0 ? void 0 : routeLeader.count) >= 5) state.players[routeLeader.id].bonus.longest = true;
+  if (routeLeader) {
+    state.players.forEach(function (player) {
+      player.bonus.longest = player.id === routeLeader.id;
+    });
+  }
+  if (tvLeader) {
+    state.players.forEach(function (player) {
+      player.bonus.largestTv = player.id === tvLeader.id;
+    });
+  }
 }
 function produce(state, total) {
+  state.turnStage = "production";
   if (total === 7) {
     var pending = Object.fromEntries(state.players.map(function (player) {
       return [player.id, discardRequirement(player)];
-    }).filter(function (_ref11) {
-      var _ref12 = _slicedToArray(_ref11, 2),
-        need = _ref12[1];
+    }).filter(function (_ref15) {
+      var _ref16 = _slicedToArray(_ref15, 2),
+        need = _ref16[1];
       return need > 0;
     }));
     state.pendingDiscards = pending;
@@ -736,6 +877,7 @@ function produce(state, total) {
     });
   });
   addLog(state, gained.length ? "\u7523\u51FA ".concat(total, ": ").concat(gained.join(", ")) : "\u7523\u51FA ".concat(total, ": \u4F55\u3082\u751F\u307E\u308C\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+  state.turnStage = "main";
 }
 function moveTurn(state) {
   refreshBonuses(state);
@@ -751,6 +893,7 @@ function moveTurn(state) {
   state.turnCount = (state.turnCount || 0) + 1;
   state.rolled = false;
   state.dice = null;
+  state.turnStage = "roll";
   state.action = "roll";
   addLog(state, "".concat(state.players[state.turn].name, " \u306E\u30BF\u30FC\u30F3\u3067\u3059\u3002"));
 }
@@ -793,6 +936,8 @@ function reducer(state, event) {
       next.pendingDiscards = {};
       addLog(next, "全員の廃棄が完了しました。ユニヴァース クリミナルを移動してください。");
       startCriminalMove(next, next.turn);
+    } else {
+      next.turnStage = "production";
     }
     return next;
   }
@@ -810,6 +955,7 @@ function reducer(state, event) {
     addPrivateMessage(next, victimId, "".concat(next.players[actor].name, " \u306B ").concat(RESOURCES[stolen].name, " \u3092\u596A\u308F\u308C\u307E\u3057\u305F\u3002"));
     next.pendingSteal = null;
     next.criminalMover = null;
+    next.turnStage = next.rolled ? "main" : "roll";
     next.action = next.rolled ? "build" : "roll";
     return next;
   }
@@ -819,8 +965,8 @@ function reducer(state, event) {
     var d2 = Math.floor(Math.random() * 6) + 1;
     next.dice = [d1, d2];
     next.rolled = true;
-    next.action = "build";
     produce(next, d1 + d2);
+    if (next.turnStage === "main") next.action = "build";
     return next;
   }
   if (event.type === "vertex") {
@@ -837,7 +983,7 @@ function reducer(state, event) {
       addLog(next, "".concat(player.name, " \u304C\u60D1\u661F\u3092\u914D\u7F6E\u3057\u307E\u3057\u305F\u3002\u661F\u9593\u822A\u8DEF\u3092\u63A5\u7D9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
       return next;
     }
-    if (actor !== next.turn || !next.rolled) return next;
+    if (actor !== next.turn || !isMainPhase(next)) return next;
     if (next.action === "planet" && canBuildPlanet(next, vertexId, actor)) {
       pay(player, COSTS.planet);
       next.buildings[vertexId] = {
@@ -847,7 +993,7 @@ function reducer(state, event) {
       addLog(next, "".concat(player.name, " \u304C\u60D1\u661F\u3092\u5EFA\u8A2D\u3057\u307E\u3057\u305F\u3002"));
     } else if (next.action === "star") {
       var building = next.buildings[vertexId];
-      if ((building === null || building === void 0 ? void 0 : building.player) === actor && building.type === "planet" && canAfford(player, COSTS.star)) {
+      if ((building === null || building === void 0 ? void 0 : building.player) === actor && building.type === "planet" && countBuildings(next, actor, "star") < BUILD_LIMITS.star && canAfford(player, COSTS.star)) {
         pay(player, COSTS.star);
         building.type = "star";
         addLog(next, "".concat(player.name, " \u304C\u60D1\u661F\u3092\u6052\u661F\u3078\u5F37\u5316\u3057\u307E\u3057\u305F\u3002"));
@@ -879,6 +1025,7 @@ function reducer(state, event) {
         next.phase = "play";
         next.turn = 0;
         next.rolled = false;
+        next.turnStage = "roll";
         next.action = "roll";
         addLog(next, "初期配置完了。最初のプレイヤーからサイコロを振ります。");
       } else {
@@ -887,7 +1034,7 @@ function reducer(state, event) {
       }
       return next;
     }
-    if (actor !== next.turn || !next.rolled || !canBuildRoute(next, edgeId, actor, free)) return next;
+    if (actor !== next.turn || !isMainPhase(next) || !canBuildRoute(next, edgeId, actor, free)) return next;
     if (!free) pay(player, COSTS.route);
     next.routes[edgeId] = {
       player: actor
@@ -901,7 +1048,7 @@ function reducer(state, event) {
     return next;
   }
   if (event.type === "buyDev") {
-    if (actor !== next.turn || !next.rolled || !canAfford(player, COSTS.frontier) || next.deck.length === 0) return next;
+    if (actor !== next.turn || !isMainPhase(next) || !canAfford(player, COSTS.frontier) || next.deck.length === 0) return next;
     pay(player, COSTS.frontier);
     var card = next.deck.pop();
     player.hiddenNewFrontiers.push({
@@ -912,15 +1059,20 @@ function reducer(state, event) {
     return next;
   }
   if (event.type === "playDev") {
+    if (player.frontierPlayedTurn === next.turnCount) return next;
     var cardIndex = player.hiddenNewFrontiers.findIndex(function (card) {
       return frontierType(card) === event.card && canPlayFrontier(card, next);
     });
-    if (actor !== next.turn || cardIndex < 0) return next;
+    if (actor !== next.turn || !isMainPhase(next) || cardIndex < 0) return next;
     var _card = player.hiddenNewFrontiers.splice(cardIndex, 1)[0];
     var type = frontierType(_card);
     player.playedNewFrontiers = player.playedNewFrontiers || [];
     player.playedNewFrontiers.push(type);
+    player.frontierPlayedTurn = next.turnCount;
     next.discard.push(type);
+    if (type === "point") {
+      addLog(next, "".concat(player.name, " \u304C\u52DD\u5229\u8A18\u9332\u3092\u516C\u958B\u3057\u307E\u3057\u305F\u3002"));
+    }
     if (type === "tv") {
       player.playedTv += 1;
       startCriminalMove(next, actor);
@@ -952,7 +1104,7 @@ function reducer(state, event) {
   }
   if (event.type === "bankTrade") {
     var rate = tradeRateFor(next, actor, event.give);
-    if (actor !== next.turn || !next.rolled || (player.resources[event.give] || 0) < rate) return next;
+    if (actor !== next.turn || !isMainPhase(next) || (player.resources[event.give] || 0) < rate) return next;
     player.resources[event.give] -= rate;
     player.resources[event.take] += 1;
     addLog(next, "".concat(player.name, " \u304C").concat(rate, ":1\u901A\u4FE1\u4EA4\u6613\u3092\u884C\u3044\u307E\u3057\u305F\u3002"));
@@ -964,7 +1116,7 @@ function reducer(state, event) {
       partnerGives: cleanBundle(event.partnerGives)
     };
     var partnerId = Number(event.partnerId);
-    if (actor !== next.turn || !next.rolled || next.negotiation || partnerId === actor || !next.players[partnerId]) return next;
+    if (actor !== next.turn || !isMainPhase(next) || next.negotiation || partnerId === actor || !next.players[partnerId]) return next;
     if (!canPlayerOffer(next, partnerId, offer)) return next;
     next.negotiation = {
       id: crypto.randomUUID(),
@@ -1065,14 +1217,14 @@ function tileName(tile) {
   if (tile.terrain === "desert") return "中性子星";
   return RESOURCES[tile.terrain].terrain;
 }
-function Cost(_ref13) {
-  var cost = _ref13.cost;
+function Cost(_ref17) {
+  var cost = _ref17.cost;
   return /*#__PURE__*/React.createElement("span", {
     className: "cost"
-  }, Object.entries(cost).map(function (_ref14) {
-    var _ref15 = _slicedToArray(_ref14, 2),
-      key = _ref15[0],
-      value = _ref15[1];
+  }, Object.entries(cost).map(function (_ref18) {
+    var _ref19 = _slicedToArray(_ref18, 2),
+      key = _ref19[0],
+      value = _ref19[1];
     return /*#__PURE__*/React.createElement("span", {
       key: key,
       style: {
@@ -1081,10 +1233,10 @@ function Cost(_ref13) {
     }, RESOURCES[key].name, " ", value);
   }));
 }
-function ResourceBundleInput(_ref16) {
-  var title = _ref16.title,
-    value = _ref16.value,
-    _onChange = _ref16.onChange;
+function ResourceBundleInput(_ref20) {
+  var title = _ref20.title,
+    value = _ref20.value,
+    _onChange = _ref20.onChange;
   return /*#__PURE__*/React.createElement("div", {
     className: "bundleInput"
   }, /*#__PURE__*/React.createElement("h3", null, title), RESOURCE_KEYS.map(function (key) {
@@ -1104,11 +1256,11 @@ function ResourceBundleInput(_ref16) {
 function emptyBundle() {
   return emptyResources(0);
 }
-function NegotiationPanel(_ref17) {
+function NegotiationPanel(_ref21) {
   var _state$players$find$i, _state$players$find;
-  var state = _ref17.state,
-    myPlayerId = _ref17.myPlayerId,
-    onEvent = _ref17.onEvent;
+  var state = _ref21.state,
+    myPlayerId = _ref21.myPlayerId,
+    onEvent = _ref21.onEvent;
   var _useState = useState((myPlayerId + 1) % 4),
     _useState2 = _slicedToArray(_useState, 2),
     partnerId = _useState2[0],
@@ -1131,7 +1283,7 @@ function NegotiationPanel(_ref17) {
   var selectedPartner = state.players[partnerId] ? partnerId : (_state$players$find$i = (_state$players$find = state.players.find(function (player) {
     return player.id !== myPlayerId;
   })) === null || _state$players$find === void 0 ? void 0 : _state$players$find.id) !== null && _state$players$find$i !== void 0 ? _state$players$find$i : 0;
-  var canStart = isTurnPlayer && state.phase === "play" && state.rolled && !negotiation && selectedPartner !== myPlayerId && canPlayerOffer(state, selectedPartner, draftOffer);
+  var canStart = isTurnPlayer && isMainPhase(state) && !negotiation && selectedPartner !== myPlayerId && canPlayerOffer(state, selectedPartner, draftOffer);
   var canCounter = negotiation && !negotiation.decision && myPlayerId === negotiation.awaiting && canPlayerOffer(state, negotiation.partner, draftOffer);
   var canIntervene = negotiation && myPlayerId !== negotiation.turnPlayer && myPlayerId !== negotiation.partner && canPlayerOffer(state, myPlayerId, draftOffer) && isBetterOffer(draftOffer, negotiation.currentOffer, negotiation.usedCombos);
   var canShowIntervention = negotiation && canPotentiallyIntervene(state, myPlayerId);
@@ -1233,11 +1385,11 @@ function NegotiationPanel(_ref17) {
     }, line);
   }))));
 }
-function CriminalPanel(_ref18) {
+function CriminalPanel(_ref22) {
   var _state$pendingDiscard;
-  var state = _ref18.state,
-    myPlayerId = _ref18.myPlayerId,
-    onEvent = _ref18.onEvent;
+  var state = _ref22.state,
+    myPlayerId = _ref22.myPlayerId,
+    onEvent = _ref22.onEvent;
   var _useState7 = useState(emptyBundle),
     _useState8 = _slicedToArray(_useState7, 2),
     discardBundle = _useState8[0],
@@ -1247,10 +1399,10 @@ function CriminalPanel(_ref18) {
     victimId = _useState0[0],
     setVictimId = _useState0[1];
   var need = Number(((_state$pendingDiscard = state.pendingDiscards) === null || _state$pendingDiscard === void 0 ? void 0 : _state$pendingDiscard[myPlayerId]) || 0);
-  var pendingDiscardNames = pendingDiscardEntries(state).map(function (_ref19) {
-    var _ref20 = _slicedToArray(_ref19, 2),
-      playerId = _ref20[0],
-      needCount = _ref20[1];
+  var pendingDiscardNames = pendingDiscardEntries(state).map(function (_ref23) {
+    var _ref24 = _slicedToArray(_ref23, 2),
+      playerId = _ref24[0],
+      needCount = _ref24[1];
     return "".concat(state.players[playerId].name, ":").concat(needCount, "\u679A");
   });
   var pendingSteal = state.pendingSteal;
@@ -1330,7 +1482,7 @@ function HelpPanel() {
     }
   }, "\u65B0\u5929\u5730")), tab === "rules" && /*#__PURE__*/React.createElement("div", {
     className: "helpContent"
-  }, /*#__PURE__*/React.createElement("h2", null, "\u904A\u3073\u65B9"), /*#__PURE__*/React.createElement("p", null, "\u30B5\u30A4\u30B3\u30ED\u3067\u8CC7\u6E90\u3092\u5F97\u3066\u3001\u60D1\u661F\u3001\u6052\u661F\u3001\u661F\u9593\u822A\u8DEF\u3092\u5E83\u3052\u307E\u3059\u300210 VP\u306B\u5230\u9054\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u52DD\u5229\u3067\u3059\u3002"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "\u521D\u671F\u914D\u7F6E\u3067\u306F\u5404\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u60D1\u661F\u3068\u661F\u9593\u822A\u8DEF\u30922\u30BB\u30C3\u30C8\u7F6E\u304D\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u81EA\u5206\u306E\u756A\u306F\u30B5\u30A4\u30B3\u30ED\u3001\u4EA4\u6613\u3001\u5EFA\u8A2D\u3001\u65B0\u5929\u5730\u306E\u9806\u306B\u9032\u3081\u3089\u308C\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u51FA\u76EE\u3068\u540C\u3058\u6570\u5B57\u306E\u30BF\u30A4\u30EB\u306B\u96A3\u63A5\u3059\u308B\u60D1\u661F\u306F\u8CC7\u6E901\u3001\u6052\u661F\u306F\u8CC7\u6E902\u3092\u5F97\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "7\u304C\u51FA\u305F\u3089\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u3001\u305D\u306E\u30BF\u30A4\u30EB\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8\u306B\u63A5\u3059\u308B\u60D1\u661F\u304B\u6052\u661F\u304C\u3042\u308B\u3068\u30012:1\u307E\u305F\u306F3:1\u4EA4\u6613\u304C\u4F7F\u3048\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("h2", null, "\u52DD\u5229\u70B9"), /*#__PURE__*/React.createElement("p", null, "\u60D1\u661F\u306F1 VP\u3001\u6052\u661F\u306F2 VP\u3001\u52DD\u5229\u8A18\u9332\u306F1 VP\u3067\u3059\u3002\u6700\u9577\u822A\u8DEF\u3068\u6700\u5927TV\u306F\u305D\u308C\u305E\u308C2 VP\u3067\u3059\u3002")), tab === "terms" && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("h2", null, "\u904A\u3073\u65B9"), /*#__PURE__*/React.createElement("p", null, "\u30B5\u30A4\u30B3\u30ED\u3067\u8CC7\u6E90\u3092\u5F97\u3066\u3001\u60D1\u661F\u3001\u6052\u661F\u3001\u661F\u9593\u822A\u8DEF\u3092\u5E83\u3052\u307E\u3059\u300210 VP\u306B\u5230\u9054\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u52DD\u5229\u3067\u3059\u3002"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "\u521D\u671F\u914D\u7F6E\u3067\u306F\u5404\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u60D1\u661F\u3068\u661F\u9593\u822A\u8DEF\u30922\u30BB\u30C3\u30C8\u7F6E\u304D\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u81EA\u5206\u306E\u756A\u306F\u30B5\u30A4\u30B3\u30ED\u3001\u8CC7\u6E90\u7372\u5F97\u3001\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u306E\u9806\u306B\u9032\u307F\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u3067\u306F\u4EA4\u63DB\u3001\u5EFA\u8A2D\u3001\u65B0\u5929\u5730\u3001\u4EA4\u6E09\u3092\u884C\u3048\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u51FA\u76EE\u3068\u540C\u3058\u6570\u5B57\u306E\u30BF\u30A4\u30EB\u306B\u96A3\u63A5\u3059\u308B\u60D1\u661F\u306F\u8CC7\u6E901\u3001\u6052\u661F\u306F\u8CC7\u6E902\u3092\u5F97\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "7\u304C\u51FA\u305F\u3089\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u3001\u305D\u306E\u30BF\u30A4\u30EB\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8\u306B\u63A5\u3059\u308B\u60D1\u661F\u304B\u6052\u661F\u304C\u3042\u308B\u3068\u30012:1\u307E\u305F\u306F3:1\u4EA4\u6613\u304C\u4F7F\u3048\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("h2", null, "\u52DD\u5229\u70B9"), /*#__PURE__*/React.createElement("p", null, "\u60D1\u661F\u306F1 VP\u3001\u6052\u661F\u306F2 VP\u3001\u52DD\u5229\u8A18\u9332\u306F1 VP\u3067\u3059\u3002\u6700\u9577\u822A\u8DEF\u3068\u6700\u5927TV\u306F\u305D\u308C\u305E\u308C2 VP\u3067\u3059\u3002")), tab === "terms" && /*#__PURE__*/React.createElement("div", {
     className: "helpContent"
   }, /*#__PURE__*/React.createElement("h2", null, "\u7528\u8A9E\u5BFE\u5FDC"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u60D1\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u958B\u62D3\u5730\u3002\u5EFA\u3066\u308B\u3068\u96A3\u63A5\u30BF\u30A4\u30EB\u304B\u3089\u8CC7\u6E90\u3092\u5F97\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u6052\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u90FD\u5E02\u3002\u60D1\u661F\u3092\u5F37\u5316\u3057\u3001\u7523\u51FA\u304C2\u500D\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u661F\u9593\u822A\u8DEF"), /*#__PURE__*/React.createElement("dd", null, "\u8857\u9053\u3002\u65B0\u3057\u3044\u60D1\u661F\u3092\u7F6E\u304F\u305F\u3081\u306E\u63A5\u7D9A\u8DEF\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8"), /*#__PURE__*/React.createElement("dd", null, "\u6E2F\u3002\u63A5\u3057\u3066\u3044\u308B\u3068\u901A\u4FE1\u4EA4\u6613\u304C\u6709\u5229\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u4E2D\u6027\u5B50\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u7802\u6F20\u3002\u8CC7\u6E90\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB"), /*#__PURE__*/React.createElement("dd", null, "\u76D7\u8CCA\u3002\u3044\u308B\u30BF\u30A4\u30EB\u306E\u7523\u51FA\u3092\u6B62\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TV"), /*#__PURE__*/React.createElement("dd", null, "\u9A0E\u58EB\u3002\u4F7F\u3046\u3068\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u52D5\u304B\u3057\u307E\u3059\u3002"))), /*#__PURE__*/React.createElement("h2", null, "\u8CC7\u6E90"), /*#__PURE__*/React.createElement("p", null, "\u5CA9\u77F3\u60D1\u661F=\u5CA9\u77F3\u3001\u9271\u77F3\u60D1\u661F=\u30EC\u30A2\u30E1\u30BF\u30EB\u3001\u8CC7\u6750\u5DE5\u5834=\u8CC7\u6750\u3001\u30CA\u30CE\u30DE\u30B7\u30F3\u5DE5\u5834=\u30CA\u30CE\u30DE\u30B7\u30F3\u3001\u6C34\u8015\u683D\u57F9=\u98DF\u6599\u3002")), tab === "cards" && /*#__PURE__*/React.createElement("div", {
     className: "helpContent"
@@ -1469,10 +1621,10 @@ function usePeerRoom(state, setState, roomId, myPlayerId) {
     send: send
   };
 }
-function Board(_ref21) {
-  var state = _ref21.state,
-    onEvent = _ref21.onEvent,
-    myPlayerId = _ref21.myPlayerId;
+function Board(_ref25) {
+  var state = _ref25.state,
+    onEvent = _ref25.onEvent,
+    myPlayerId = _ref25.myPlayerId;
   var active = currentPlayer(state).id;
   var canClick = state.phase === "setup" ? active === myPlayerId : state.turn === myPlayerId;
   return /*#__PURE__*/React.createElement("svg", {
@@ -1672,6 +1824,7 @@ function App() {
   var me = state.players[myPlayerId];
   var active = currentPlayer(state);
   var actionable = state.phase === "setup" ? active.id === myPlayerId : state.turn === myPlayerId;
+  var mainActionable = actionable && isMainPhase(state);
   var currentTradeRate = tradeRateFor(state, myPlayerId, trade.give);
   return /*#__PURE__*/React.createElement("main", null, /*#__PURE__*/React.createElement("section", {
     className: "topbar"
@@ -1701,7 +1854,7 @@ function App() {
     className: "pill"
   }, "\u73FE\u5728: ", active.name), /*#__PURE__*/React.createElement("span", {
     className: "pill"
-  }, "\u30D5\u30A7\u30FC\u30BA: ", state.phase === "setup" ? "初期配置" : state.rolled ? "交易・建設" : "サイコロ"), /*#__PURE__*/React.createElement("span", {
+  }, "\u30D5\u30A7\u30FC\u30BA: ", phaseLabel(state)), /*#__PURE__*/React.createElement("span", {
     className: "pill"
   }, "\u64CD\u4F5C: ", BUILD_LABEL[state.action] || (state.action === "criminal" ? "ユニヴァース クリミナル" : state.action === "discard" ? "資源廃棄" : state.action === "steal" ? "資源奪取" : state.action)), state.dice && /*#__PURE__*/React.createElement("span", {
     className: "pill"
@@ -1749,7 +1902,7 @@ function App() {
         type: "endTurn"
       });
     },
-    disabled: !actionable || state.phase !== "play" || !!state.negotiation
+    disabled: !mainActionable || !!state.negotiation
   }, /*#__PURE__*/React.createElement(Undo2, {
     size: 18
   }), " \u30BF\u30FC\u30F3\u7D42\u4E86")), /*#__PURE__*/React.createElement("div", {
@@ -1810,7 +1963,7 @@ function App() {
         type: "buyDev"
       });
     },
-    disabled: !actionable || !state.rolled
+    disabled: !mainActionable
   }, /*#__PURE__*/React.createElement(Shuffle, {
     size: 17
   }), " \u65B0\u5929\u5730\u3092\u7372\u5F97")), /*#__PURE__*/React.createElement("div", {
@@ -1844,7 +1997,8 @@ function App() {
       return act(_objectSpread({
         type: "bankTrade"
       }, trade));
-    }
+    },
+    disabled: !mainActionable
   }, "\u4EA4\u63DB"), /*#__PURE__*/React.createElement("p", {
     className: "spaceportNote"
   }, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8: ", spaceportText(state, myPlayerId))), /*#__PURE__*/React.createElement(CriminalPanel, {
