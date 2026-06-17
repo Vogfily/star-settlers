@@ -53,7 +53,17 @@ const DEV_NAMES = {
   point: "勝利記録",
 };
 
-const SPACEPORT_TYPES = [null, null, null, null, ...RESOURCE_KEYS];
+const FIXED_SPACEPORTS = [
+  { outerIndex: 0, type: "nano" },
+  { outerIndex: 3, type: null },
+  { outerIndex: 6, type: "food" },
+  { outerIndex: 9, type: null },
+  { outerIndex: 13, type: "rare" },
+  { outerIndex: 16, type: null },
+  { outerIndex: 19, type: "rock" },
+  { outerIndex: 23, type: "material" },
+  { outerIndex: 26, type: null },
+];
 
 const BUILD_LABEL = {
   route: "星間航路",
@@ -146,6 +156,80 @@ function emptyResources(value = 0) {
   return Object.fromEntries(RESOURCE_KEYS.map((key) => [key, value]));
 }
 
+function totalResources(resources) {
+  return RESOURCE_KEYS.reduce((sum, key) => sum + Number(resources[key] || 0), 0);
+}
+
+function hasResources(player, resources) {
+  return RESOURCE_KEYS.every((key) => (player.resources[key] || 0) >= Number(resources[key] || 0));
+}
+
+function moveResources(from, to, resources) {
+  RESOURCE_KEYS.forEach((key) => {
+    const amount = Number(resources[key] || 0);
+    from.resources[key] -= amount;
+    to.resources[key] += amount;
+  });
+}
+
+function cleanBundle(resources) {
+  return Object.fromEntries(RESOURCE_KEYS.map((key) => [key, Math.max(0, Number(resources[key] || 0))]));
+}
+
+function bundleText(resources) {
+  const parts = RESOURCE_KEYS.filter((key) => Number(resources[key] || 0) > 0).map((key) => `${RESOURCES[key].name}${resources[key]}`);
+  return parts.length ? parts.join(" + ") : "なし";
+}
+
+function bundleSignature(resources) {
+  return RESOURCE_KEYS.filter((key) => Number(resources[key] || 0) > 0).join("+") || "none";
+}
+
+function offerSignature(offer) {
+  return `${bundleSignature(offer.turnGives)}=>${bundleSignature(offer.partnerGives)}`;
+}
+
+function isGiftOffer(offer) {
+  return totalResources(offer.turnGives) === 0 || totalResources(offer.partnerGives) === 0;
+}
+
+function isBetterOffer(candidate, current, usedCombos = []) {
+  const candidateTurnGives = totalResources(candidate.turnGives);
+  const candidatePartnerGives = totalResources(candidate.partnerGives);
+  const currentTurnGives = totalResources(current.turnGives);
+  const currentPartnerGives = totalResources(current.partnerGives);
+  const sameTurnCost = candidateTurnGives === currentTurnGives;
+  const samePartnerPay = candidatePartnerGives === currentPartnerGives;
+  const lowerTurnCost = candidateTurnGives < currentTurnGives;
+  const higherPartnerPay = candidatePartnerGives > currentPartnerGives;
+  const newCombo = !usedCombos.includes(offerSignature(candidate));
+
+  if (samePartnerPay && lowerTurnCost) return true;
+  if (sameTurnCost && higherPartnerPay) return true;
+  return newCombo && candidateTurnGives <= currentTurnGives && candidatePartnerGives >= currentPartnerGives && (lowerTurnCost || higherPartnerPay);
+}
+
+function canPlayerOffer(state, partnerId, offer) {
+  const turnPlayer = state.players[state.turn];
+  const partner = state.players[partnerId];
+  return !isGiftOffer(offer) && hasResources(turnPlayer, offer.turnGives) && hasResources(partner, offer.partnerGives);
+}
+
+function canPotentiallyIntervene(state, playerId) {
+  const negotiation = state.negotiation;
+  if (!negotiation || playerId === negotiation.turnPlayer || playerId === negotiation.partner) return false;
+  const current = negotiation.currentOffer;
+  const turnPlayer = state.players[negotiation.turnPlayer];
+  const player = state.players[playerId];
+  const turnCost = totalResources(current.turnGives);
+  const partnerPay = totalResources(current.partnerGives);
+  const playerCards = totalResources(player.resources);
+
+  if (turnCost > 1 && hasResources(turnPlayer, current.turnGives) && hasResources(player, current.partnerGives)) return true;
+  if (playerCards > partnerPay && hasResources(turnPlayer, current.turnGives)) return true;
+  return false;
+}
+
 function spaceportName(type) {
   return type ? `${RESOURCES[type].name} 2:1` : "3:1";
 }
@@ -194,7 +278,6 @@ function makeBoard(seedText) {
     incidentEdges[e.a].push(e.id);
     incidentEdges[e.b].push(e.id);
   });
-  const shuffledPorts = shuffle(SPACEPORT_TYPES, random);
   const outerEdges = edgeList
     .filter((edge) => edge.tiles.length === 1)
     .map((edge) => {
@@ -205,11 +288,9 @@ function makeBoard(seedText) {
       return { ...edge, x, y, angle: Math.atan2(y - CENTER.y, x - CENTER.x) };
     })
     .sort((a, b) => a.angle - b.angle);
-  const spaceports = outerEdges
-    .filter((_, index) => index % 2 === 0)
-    .slice(0, 9)
-    .map((edge, index) => {
-      const type = shuffledPorts[index];
+  const spaceports = FIXED_SPACEPORTS.map((spaceport, index) => {
+      const edge = outerEdges[spaceport.outerIndex];
+      const type = spaceport.type;
       const dx = edge.x - CENTER.x;
       const dy = edge.y - CENTER.y;
       const length = Math.hypot(dx, dy) || 1;
@@ -262,6 +343,7 @@ function createGame(roomId = crypto.randomUUID().slice(0, 8)) {
     rolled: false,
     criminalTile: neutron,
     selectedTile: neutron,
+    negotiation: null,
     log: ["宇宙航路の準備が整いました。惑星と星間航路を初期配置してください。"],
     winner: null,
   };
@@ -546,7 +628,101 @@ function reducer(state, event) {
     addLog(next, `${player.name} が${rate}:1通信交易を行いました。`);
     return next;
   }
+  if (event.type === "startNegotiation") {
+    const offer = { turnGives: cleanBundle(event.turnGives), partnerGives: cleanBundle(event.partnerGives) };
+    const partnerId = Number(event.partnerId);
+    if (actor !== next.turn || !next.rolled || next.negotiation || partnerId === actor || !next.players[partnerId]) return next;
+    if (!canPlayerOffer(next, partnerId, offer)) return next;
+    next.negotiation = {
+      id: crypto.randomUUID(),
+      turnPlayer: actor,
+      partner: partnerId,
+      offeredBy: actor,
+      awaiting: partnerId,
+      currentOffer: offer,
+      usedCombos: [offerSignature(offer)],
+      history: [`${next.players[actor].name} が ${next.players[partnerId].name} に交換を申し出ました。`],
+    };
+    addLog(next, `${next.players[actor].name} が公開交渉を開始しました。`);
+    return next;
+  }
+  if (event.type === "counterNegotiation") {
+    const negotiation = next.negotiation;
+    if (!negotiation || actor !== negotiation.awaiting) return next;
+    const offer = { turnGives: cleanBundle(event.turnGives), partnerGives: cleanBundle(event.partnerGives) };
+    if (!canPlayerOffer(next, negotiation.partner, offer)) return next;
+    negotiation.currentOffer = offer;
+    negotiation.offeredBy = actor;
+    negotiation.awaiting = actor === negotiation.turnPlayer ? negotiation.partner : negotiation.turnPlayer;
+    negotiation.usedCombos = [...new Set([...negotiation.usedCombos, offerSignature(offer)])];
+    negotiation.history = [
+      `${next.players[actor].name} が条件変更を提示しました。`,
+      ...negotiation.history,
+    ].slice(0, 8);
+    return next;
+  }
+  if (event.type === "interveneNegotiation") {
+    const negotiation = next.negotiation;
+    if (!negotiation || actor === negotiation.turnPlayer || actor === negotiation.partner) return next;
+    const offer = { turnGives: cleanBundle(event.turnGives), partnerGives: cleanBundle(event.partnerGives) };
+    if (!canPlayerOffer(next, actor, offer) || !isBetterOffer(offer, negotiation.currentOffer, negotiation.usedCombos)) return next;
+    const previousPartner = negotiation.partner;
+    negotiation.partner = actor;
+    negotiation.offeredBy = actor;
+    negotiation.awaiting = negotiation.turnPlayer;
+    negotiation.decision = null;
+    negotiation.currentOffer = offer;
+    negotiation.usedCombos = [...new Set([...negotiation.usedCombos, offerSignature(offer)])];
+    negotiation.history = [
+      `${next.players[actor].name} が ${next.players[previousPartner].name} より有利な条件で介入しました。`,
+      ...negotiation.history,
+    ].slice(0, 8);
+    addLog(next, `${next.players[actor].name} が公開交渉に介入しました。`);
+    return next;
+  }
+  if (event.type === "acceptNegotiation") {
+    const negotiation = next.negotiation;
+    if (!negotiation || negotiation.decision || actor !== negotiation.awaiting) return next;
+    if (!canPlayerOffer(next, negotiation.partner, negotiation.currentOffer)) return next;
+    negotiation.decision = { type: "accepted", by: actor };
+    negotiation.awaiting = null;
+    negotiation.history = [
+      `${next.players[actor].name} が交換を受け入れました。介入がなければ確定できます。`,
+      ...negotiation.history,
+    ].slice(0, 8);
+    addLog(next, `${next.players[actor].name} が交換を受け入れました。`);
+    return next;
+  }
+  if (event.type === "rejectNegotiation") {
+    const negotiation = next.negotiation;
+    if (!negotiation || negotiation.decision || actor !== negotiation.awaiting) return next;
+    negotiation.decision = { type: "rejected", by: actor };
+    negotiation.awaiting = null;
+    negotiation.history = [
+      `${next.players[actor].name} が交換を拒否しました。介入がなければ終了できます。`,
+      ...negotiation.history,
+    ].slice(0, 8);
+    addLog(next, `${next.players[actor].name} が交換を拒否しました。`);
+    return next;
+  }
+  if (event.type === "finalizeNegotiation") {
+    const negotiation = next.negotiation;
+    if (!negotiation || !negotiation.decision || actor !== negotiation.turnPlayer) return next;
+    if (negotiation.decision.type === "accepted") {
+      if (!canPlayerOffer(next, negotiation.partner, negotiation.currentOffer)) return next;
+      const turnPlayer = next.players[negotiation.turnPlayer];
+      const partner = next.players[negotiation.partner];
+      moveResources(turnPlayer, partner, negotiation.currentOffer.turnGives);
+      moveResources(partner, turnPlayer, negotiation.currentOffer.partnerGives);
+      addLog(next, `${turnPlayer.name} と ${partner.name} の交換が確定しました。`);
+    } else {
+      addLog(next, "公開交渉が終了しました。");
+    }
+    next.negotiation = null;
+    return next;
+  }
   if (event.type === "endTurn") {
+    if (next.negotiation) return next;
     if (actor === next.turn && next.phase === "play") moveTurn(next);
     return next;
   }
@@ -567,6 +743,149 @@ function Cost({ cost }) {
         </span>
       ))}
     </span>
+  );
+}
+
+function ResourceBundleInput({ title, value, onChange }) {
+  return (
+    <div className="bundleInput">
+      <h3>{title}</h3>
+      {RESOURCE_KEYS.map((key) => (
+        <label key={key}>
+          <span>{RESOURCES[key].name}</span>
+          <input
+            type="number"
+            min="0"
+            max="19"
+            value={value[key] || 0}
+            onChange={(event) => onChange({ ...value, [key]: Math.max(0, Number(event.target.value || 0)) })}
+          />
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function emptyBundle() {
+  return emptyResources(0);
+}
+
+function NegotiationPanel({ state, myPlayerId, onEvent }) {
+  const [partnerId, setPartnerId] = useState((myPlayerId + 1) % 4);
+  const [turnGives, setTurnGives] = useState(emptyBundle);
+  const [partnerGives, setPartnerGives] = useState(emptyBundle);
+  const negotiation = state.negotiation;
+  const me = state.players[myPlayerId];
+  const isTurnPlayer = myPlayerId === state.turn;
+  const draftOffer = { turnGives: cleanBundle(turnGives), partnerGives: cleanBundle(partnerGives) };
+  const selectedPartner = state.players[partnerId] ? partnerId : state.players.find((player) => player.id !== myPlayerId)?.id ?? 0;
+  const canStart =
+    isTurnPlayer &&
+    state.phase === "play" &&
+    state.rolled &&
+    !negotiation &&
+    selectedPartner !== myPlayerId &&
+    canPlayerOffer(state, selectedPartner, draftOffer);
+
+  const canCounter =
+    negotiation &&
+    !negotiation.decision &&
+    myPlayerId === negotiation.awaiting &&
+    canPlayerOffer(state, negotiation.partner, draftOffer);
+
+  const canIntervene =
+    negotiation &&
+    myPlayerId !== negotiation.turnPlayer &&
+    myPlayerId !== negotiation.partner &&
+    canPlayerOffer(state, myPlayerId, draftOffer) &&
+    isBetterOffer(draftOffer, negotiation.currentOffer, negotiation.usedCombos);
+  const canShowIntervention = negotiation && canPotentiallyIntervene(state, myPlayerId);
+
+  return (
+    <div className="negotiation">
+      <h2>プレイヤー間交渉</h2>
+      {!negotiation && (
+        <>
+          <label className="partnerSelect">
+            交換相手
+            <select value={selectedPartner} onChange={(event) => setPartnerId(Number(event.target.value))}>
+              {state.players
+                .filter((player) => player.id !== myPlayerId)
+                .map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <div className="bundleGrid">
+            <ResourceBundleInput title="あなたが渡す" value={turnGives} onChange={setTurnGives} />
+            <ResourceBundleInput title="相手が渡す" value={partnerGives} onChange={setPartnerGives} />
+          </div>
+          <button
+            onClick={() => onEvent({ type: "startNegotiation", partnerId: selectedPartner, turnGives, partnerGives })}
+            disabled={!canStart}
+          >
+            交換を申し出る
+          </button>
+          <p className="spaceportNote">双方が1枚以上出す必要があります。持っていない資源は提示できません。</p>
+        </>
+      )}
+
+      {negotiation && (
+        <>
+          <div className="currentOffer">
+            <strong>{state.players[negotiation.turnPlayer].name} ⇄ {state.players[negotiation.partner].name}</strong>
+            <p>{state.players[negotiation.turnPlayer].name} が渡す: {bundleText(negotiation.currentOffer.turnGives)}</p>
+            <p>{state.players[negotiation.partner].name} が渡す: {bundleText(negotiation.currentOffer.partnerGives)}</p>
+            {negotiation.awaiting !== null && <small>返答待ち: {state.players[negotiation.awaiting].name}</small>}
+            {negotiation.decision && (
+              <small>
+                {negotiation.decision.type === "accepted" ? "受諾済み" : "拒否済み"}: {state.players[negotiation.decision.by].name}
+              </small>
+            )}
+          </div>
+
+          {!negotiation.decision && myPlayerId === negotiation.awaiting && (
+            <div className="negotiationActions">
+              <button className="primary" onClick={() => onEvent({ type: "acceptNegotiation" })}>
+                受け入れる
+              </button>
+              <button onClick={() => onEvent({ type: "rejectNegotiation" })}>拒否</button>
+            </div>
+          )}
+
+          {negotiation.decision && myPlayerId === negotiation.turnPlayer && (
+            <button className="primary" onClick={() => onEvent({ type: "finalizeNegotiation" })}>
+              交渉を確定
+            </button>
+          )}
+
+          {(!negotiation.decision && myPlayerId === negotiation.awaiting || canShowIntervention) && (
+            <>
+              <div className="bundleGrid">
+                <ResourceBundleInput title={`${state.players[negotiation.turnPlayer].name} が渡す`} value={turnGives} onChange={setTurnGives} />
+                <ResourceBundleInput title={`${canShowIntervention ? me.name : state.players[negotiation.partner].name} が渡す`} value={partnerGives} onChange={setPartnerGives} />
+              </div>
+              {myPlayerId === negotiation.awaiting && (
+                <button onClick={() => onEvent({ type: "counterNegotiation", turnGives, partnerGives })} disabled={!canCounter}>
+                  条件変更を提示
+                </button>
+              )}
+              {canShowIntervention && (
+                <button onClick={() => onEvent({ type: "interveneNegotiation", turnGives, partnerGives })} disabled={!canIntervene}>
+                  より良い条件で介入
+                </button>
+              )}
+            </>
+          )}
+
+          <div className="negotiationHistory">
+            {negotiation.history.map((line, index) => <p key={index}>{line}</p>)}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -883,7 +1202,7 @@ function App() {
             <button className="primary" onClick={() => act({ type: "roll" })} disabled={!actionable || state.phase !== "play" || state.rolled}>
               <Dice5 size={18} /> サイコロ
             </button>
-            <button onClick={() => act({ type: "endTurn" })} disabled={!actionable || state.phase !== "play"}>
+            <button onClick={() => act({ type: "endTurn" })} disabled={!actionable || state.phase !== "play" || !!state.negotiation}>
               <Undo2 size={18} /> ターン終了
             </button>
           </div>
@@ -926,6 +1245,8 @@ function App() {
             <button onClick={() => act({ type: "bankTrade", ...trade })}>交換</button>
             <p className="spaceportNote">スペースポート: {spaceportText(state, myPlayerId)}</p>
           </div>
+
+          <NegotiationPanel state={state} myPlayerId={myPlayerId} onEvent={act} />
 
           <div className="frontiers">
             <h2>手札の新天地</h2>

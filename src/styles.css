@@ -260,6 +260,7 @@ h2 {
 
 .costs,
 .trade,
+.negotiation,
 .frontiers,
 .helpBox {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -299,6 +300,89 @@ h2 {
   flex-basis: 100%;
   color: #b9c6da;
   font-size: 12px;
+}
+
+.negotiation {
+  display: grid;
+  gap: 10px;
+}
+
+.partnerSelect {
+  display: grid;
+  gap: 6px;
+  color: #b9c6da;
+  font-size: 12px;
+}
+
+.bundleGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.bundleInput {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.bundleInput h3 {
+  margin: 0 0 2px;
+  color: #edf2ff;
+  font-size: 12px;
+}
+
+.bundleInput label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 54px;
+  align-items: center;
+  gap: 6px;
+  color: #cbd6e7;
+  font-size: 12px;
+}
+
+.bundleInput input {
+  width: 54px;
+  min-height: 30px;
+  padding: 0 6px;
+}
+
+.currentOffer {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 243, 168, 0.1);
+  border: 1px solid rgba(255, 243, 168, 0.24);
+}
+
+.currentOffer p,
+.currentOffer small,
+.negotiationHistory p {
+  color: #cbd6e7;
+  font-size: 12px;
+}
+
+.negotiationActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.negotiationHistory {
+  display: grid;
+  gap: 6px;
+  max-height: 130px;
+  overflow: auto;
+}
+
+.negotiationHistory p {
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .frontiers .cards {
@@ -462,6 +546,10 @@ h2 {
 
   .panel,
   .players {
+    grid-template-columns: 1fr;
+  }
+
+  .bundleGrid {
     grid-template-columns: 1fr;
   }
 }

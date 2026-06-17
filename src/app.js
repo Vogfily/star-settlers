@@ -145,7 +145,34 @@ var DEV_NAMES = {
   plenty: "補給衛星",
   point: "勝利記録"
 };
-var SPACEPORT_TYPES = [null, null, null, null].concat(RESOURCE_KEYS);
+var FIXED_SPACEPORTS = [{
+  outerIndex: 0,
+  type: "nano"
+}, {
+  outerIndex: 3,
+  type: null
+}, {
+  outerIndex: 6,
+  type: "food"
+}, {
+  outerIndex: 9,
+  type: null
+}, {
+  outerIndex: 13,
+  type: "rare"
+}, {
+  outerIndex: 16,
+  type: null
+}, {
+  outerIndex: 19,
+  type: "rock"
+}, {
+  outerIndex: 23,
+  type: "material"
+}, {
+  outerIndex: 26,
+  type: null
+}];
 var BUILD_LABEL = {
   route: "星間航路",
   planet: "惑星",
@@ -217,6 +244,80 @@ function emptyResources() {
     return [key, value];
   }));
 }
+function totalResources(resources) {
+  return RESOURCE_KEYS.reduce(function (sum, key) {
+    return sum + Number(resources[key] || 0);
+  }, 0);
+}
+function hasResources(player, resources) {
+  return RESOURCE_KEYS.every(function (key) {
+    return (player.resources[key] || 0) >= Number(resources[key] || 0);
+  });
+}
+function moveResources(from, to, resources) {
+  RESOURCE_KEYS.forEach(function (key) {
+    var amount = Number(resources[key] || 0);
+    from.resources[key] -= amount;
+    to.resources[key] += amount;
+  });
+}
+function cleanBundle(resources) {
+  return Object.fromEntries(RESOURCE_KEYS.map(function (key) {
+    return [key, Math.max(0, Number(resources[key] || 0))];
+  }));
+}
+function bundleText(resources) {
+  var parts = RESOURCE_KEYS.filter(function (key) {
+    return Number(resources[key] || 0) > 0;
+  }).map(function (key) {
+    return "".concat(RESOURCES[key].name).concat(resources[key]);
+  });
+  return parts.length ? parts.join(" + ") : "なし";
+}
+function bundleSignature(resources) {
+  return RESOURCE_KEYS.filter(function (key) {
+    return Number(resources[key] || 0) > 0;
+  }).join("+") || "none";
+}
+function offerSignature(offer) {
+  return "".concat(bundleSignature(offer.turnGives), "=>").concat(bundleSignature(offer.partnerGives));
+}
+function isGiftOffer(offer) {
+  return totalResources(offer.turnGives) === 0 || totalResources(offer.partnerGives) === 0;
+}
+function isBetterOffer(candidate, current) {
+  var usedCombos = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+  var candidateTurnGives = totalResources(candidate.turnGives);
+  var candidatePartnerGives = totalResources(candidate.partnerGives);
+  var currentTurnGives = totalResources(current.turnGives);
+  var currentPartnerGives = totalResources(current.partnerGives);
+  var sameTurnCost = candidateTurnGives === currentTurnGives;
+  var samePartnerPay = candidatePartnerGives === currentPartnerGives;
+  var lowerTurnCost = candidateTurnGives < currentTurnGives;
+  var higherPartnerPay = candidatePartnerGives > currentPartnerGives;
+  var newCombo = !usedCombos.includes(offerSignature(candidate));
+  if (samePartnerPay && lowerTurnCost) return true;
+  if (sameTurnCost && higherPartnerPay) return true;
+  return newCombo && candidateTurnGives <= currentTurnGives && candidatePartnerGives >= currentPartnerGives && (lowerTurnCost || higherPartnerPay);
+}
+function canPlayerOffer(state, partnerId, offer) {
+  var turnPlayer = state.players[state.turn];
+  var partner = state.players[partnerId];
+  return !isGiftOffer(offer) && hasResources(turnPlayer, offer.turnGives) && hasResources(partner, offer.partnerGives);
+}
+function canPotentiallyIntervene(state, playerId) {
+  var negotiation = state.negotiation;
+  if (!negotiation || playerId === negotiation.turnPlayer || playerId === negotiation.partner) return false;
+  var current = negotiation.currentOffer;
+  var turnPlayer = state.players[negotiation.turnPlayer];
+  var player = state.players[playerId];
+  var turnCost = totalResources(current.turnGives);
+  var partnerPay = totalResources(current.partnerGives);
+  var playerCards = totalResources(player.resources);
+  if (turnCost > 1 && hasResources(turnPlayer, current.turnGives) && hasResources(player, current.partnerGives)) return true;
+  if (playerCards > partnerPay && hasResources(turnPlayer, current.turnGives)) return true;
+  return false;
+}
 function spaceportName(type) {
   return type ? "".concat(RESOURCES[type].name, " 2:1") : "3:1";
 }
@@ -282,7 +383,6 @@ function makeBoard(seedText) {
     incidentEdges[e.a].push(e.id);
     incidentEdges[e.b].push(e.id);
   });
-  var shuffledPorts = shuffle(SPACEPORT_TYPES, random);
   var outerEdges = edgeList.filter(function (edge) {
     return edge.tiles.length === 1;
   }).map(function (edge) {
@@ -298,10 +398,9 @@ function makeBoard(seedText) {
   }).sort(function (a, b) {
     return a.angle - b.angle;
   });
-  var spaceports = outerEdges.filter(function (_, index) {
-    return index % 2 === 0;
-  }).slice(0, 9).map(function (edge, index) {
-    var type = shuffledPorts[index];
+  var spaceports = FIXED_SPACEPORTS.map(function (spaceport, index) {
+    var edge = outerEdges[spaceport.outerIndex];
+    var type = spaceport.type;
     var dx = edge.x - CENTER.x;
     var dy = edge.y - CENTER.y;
     var length = Math.hypot(dx, dy) || 1;
@@ -365,6 +464,7 @@ function createGame() {
     rolled: false,
     criminalTile: neutron,
     selectedTile: neutron,
+    negotiation: null,
     log: ["宇宙航路の準備が整いました。惑星と星間航路を初期配置してください。"],
     winner: null
   };
@@ -688,7 +788,104 @@ function reducer(state, event) {
     addLog(next, "".concat(player.name, " \u304C").concat(rate, ":1\u901A\u4FE1\u4EA4\u6613\u3092\u884C\u3044\u307E\u3057\u305F\u3002"));
     return next;
   }
+  if (event.type === "startNegotiation") {
+    var offer = {
+      turnGives: cleanBundle(event.turnGives),
+      partnerGives: cleanBundle(event.partnerGives)
+    };
+    var partnerId = Number(event.partnerId);
+    if (actor !== next.turn || !next.rolled || next.negotiation || partnerId === actor || !next.players[partnerId]) return next;
+    if (!canPlayerOffer(next, partnerId, offer)) return next;
+    next.negotiation = {
+      id: crypto.randomUUID(),
+      turnPlayer: actor,
+      partner: partnerId,
+      offeredBy: actor,
+      awaiting: partnerId,
+      currentOffer: offer,
+      usedCombos: [offerSignature(offer)],
+      history: ["".concat(next.players[actor].name, " \u304C ").concat(next.players[partnerId].name, " \u306B\u4EA4\u63DB\u3092\u7533\u3057\u51FA\u307E\u3057\u305F\u3002")]
+    };
+    addLog(next, "".concat(next.players[actor].name, " \u304C\u516C\u958B\u4EA4\u6E09\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "counterNegotiation") {
+    var negotiation = next.negotiation;
+    if (!negotiation || actor !== negotiation.awaiting) return next;
+    var _offer = {
+      turnGives: cleanBundle(event.turnGives),
+      partnerGives: cleanBundle(event.partnerGives)
+    };
+    if (!canPlayerOffer(next, negotiation.partner, _offer)) return next;
+    negotiation.currentOffer = _offer;
+    negotiation.offeredBy = actor;
+    negotiation.awaiting = actor === negotiation.turnPlayer ? negotiation.partner : negotiation.turnPlayer;
+    negotiation.usedCombos = _toConsumableArray(new Set([].concat(_toConsumableArray(negotiation.usedCombos), [offerSignature(_offer)])));
+    negotiation.history = ["".concat(next.players[actor].name, " \u304C\u6761\u4EF6\u5909\u66F4\u3092\u63D0\u793A\u3057\u307E\u3057\u305F\u3002")].concat(_toConsumableArray(negotiation.history)).slice(0, 8);
+    return next;
+  }
+  if (event.type === "interveneNegotiation") {
+    var _negotiation = next.negotiation;
+    if (!_negotiation || actor === _negotiation.turnPlayer || actor === _negotiation.partner) return next;
+    var _offer2 = {
+      turnGives: cleanBundle(event.turnGives),
+      partnerGives: cleanBundle(event.partnerGives)
+    };
+    if (!canPlayerOffer(next, actor, _offer2) || !isBetterOffer(_offer2, _negotiation.currentOffer, _negotiation.usedCombos)) return next;
+    var previousPartner = _negotiation.partner;
+    _negotiation.partner = actor;
+    _negotiation.offeredBy = actor;
+    _negotiation.awaiting = _negotiation.turnPlayer;
+    _negotiation.decision = null;
+    _negotiation.currentOffer = _offer2;
+    _negotiation.usedCombos = _toConsumableArray(new Set([].concat(_toConsumableArray(_negotiation.usedCombos), [offerSignature(_offer2)])));
+    _negotiation.history = ["".concat(next.players[actor].name, " \u304C ").concat(next.players[previousPartner].name, " \u3088\u308A\u6709\u5229\u306A\u6761\u4EF6\u3067\u4ECB\u5165\u3057\u307E\u3057\u305F\u3002")].concat(_toConsumableArray(_negotiation.history)).slice(0, 8);
+    addLog(next, "".concat(next.players[actor].name, " \u304C\u516C\u958B\u4EA4\u6E09\u306B\u4ECB\u5165\u3057\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "acceptNegotiation") {
+    var _negotiation2 = next.negotiation;
+    if (!_negotiation2 || _negotiation2.decision || actor !== _negotiation2.awaiting) return next;
+    if (!canPlayerOffer(next, _negotiation2.partner, _negotiation2.currentOffer)) return next;
+    _negotiation2.decision = {
+      type: "accepted",
+      by: actor
+    };
+    _negotiation2.awaiting = null;
+    _negotiation2.history = ["".concat(next.players[actor].name, " \u304C\u4EA4\u63DB\u3092\u53D7\u3051\u5165\u308C\u307E\u3057\u305F\u3002\u4ECB\u5165\u304C\u306A\u3051\u308C\u3070\u78BA\u5B9A\u3067\u304D\u307E\u3059\u3002")].concat(_toConsumableArray(_negotiation2.history)).slice(0, 8);
+    addLog(next, "".concat(next.players[actor].name, " \u304C\u4EA4\u63DB\u3092\u53D7\u3051\u5165\u308C\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "rejectNegotiation") {
+    var _negotiation3 = next.negotiation;
+    if (!_negotiation3 || _negotiation3.decision || actor !== _negotiation3.awaiting) return next;
+    _negotiation3.decision = {
+      type: "rejected",
+      by: actor
+    };
+    _negotiation3.awaiting = null;
+    _negotiation3.history = ["".concat(next.players[actor].name, " \u304C\u4EA4\u63DB\u3092\u62D2\u5426\u3057\u307E\u3057\u305F\u3002\u4ECB\u5165\u304C\u306A\u3051\u308C\u3070\u7D42\u4E86\u3067\u304D\u307E\u3059\u3002")].concat(_toConsumableArray(_negotiation3.history)).slice(0, 8);
+    addLog(next, "".concat(next.players[actor].name, " \u304C\u4EA4\u63DB\u3092\u62D2\u5426\u3057\u307E\u3057\u305F\u3002"));
+    return next;
+  }
+  if (event.type === "finalizeNegotiation") {
+    var _negotiation4 = next.negotiation;
+    if (!_negotiation4 || !_negotiation4.decision || actor !== _negotiation4.turnPlayer) return next;
+    if (_negotiation4.decision.type === "accepted") {
+      if (!canPlayerOffer(next, _negotiation4.partner, _negotiation4.currentOffer)) return next;
+      var turnPlayer = next.players[_negotiation4.turnPlayer];
+      var partner = next.players[_negotiation4.partner];
+      moveResources(turnPlayer, partner, _negotiation4.currentOffer.turnGives);
+      moveResources(partner, turnPlayer, _negotiation4.currentOffer.partnerGives);
+      addLog(next, "".concat(turnPlayer.name, " \u3068 ").concat(partner.name, " \u306E\u4EA4\u63DB\u304C\u78BA\u5B9A\u3057\u307E\u3057\u305F\u3002"));
+    } else {
+      addLog(next, "公開交渉が終了しました。");
+    }
+    next.negotiation = null;
+    return next;
+  }
   if (event.type === "endTurn") {
+    if (next.negotiation) return next;
     if (actor === next.turn && next.phase === "play") moveTurn(next);
     return next;
   }
@@ -714,11 +911,163 @@ function Cost(_ref9) {
     }, RESOURCES[key].name, " ", value);
   }));
 }
-function HelpPanel() {
-  var _useState = useState("rules"),
+function ResourceBundleInput(_ref10) {
+  var title = _ref10.title,
+    value = _ref10.value,
+    _onChange = _ref10.onChange;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "bundleInput"
+  }, /*#__PURE__*/React.createElement("h3", null, title), RESOURCE_KEYS.map(function (key) {
+    return /*#__PURE__*/React.createElement("label", {
+      key: key
+    }, /*#__PURE__*/React.createElement("span", null, RESOURCES[key].name), /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: "0",
+      max: "19",
+      value: value[key] || 0,
+      onChange: function onChange(event) {
+        return _onChange(_objectSpread(_objectSpread({}, value), {}, _defineProperty({}, key, Math.max(0, Number(event.target.value || 0)))));
+      }
+    }));
+  }));
+}
+function emptyBundle() {
+  return emptyResources(0);
+}
+function NegotiationPanel(_ref11) {
+  var _state$players$find$i, _state$players$find;
+  var state = _ref11.state,
+    myPlayerId = _ref11.myPlayerId,
+    onEvent = _ref11.onEvent;
+  var _useState = useState((myPlayerId + 1) % 4),
     _useState2 = _slicedToArray(_useState, 2),
-    tab = _useState2[0],
-    setTab = _useState2[1];
+    partnerId = _useState2[0],
+    setPartnerId = _useState2[1];
+  var _useState3 = useState(emptyBundle),
+    _useState4 = _slicedToArray(_useState3, 2),
+    turnGives = _useState4[0],
+    setTurnGives = _useState4[1];
+  var _useState5 = useState(emptyBundle),
+    _useState6 = _slicedToArray(_useState5, 2),
+    partnerGives = _useState6[0],
+    setPartnerGives = _useState6[1];
+  var negotiation = state.negotiation;
+  var me = state.players[myPlayerId];
+  var isTurnPlayer = myPlayerId === state.turn;
+  var draftOffer = {
+    turnGives: cleanBundle(turnGives),
+    partnerGives: cleanBundle(partnerGives)
+  };
+  var selectedPartner = state.players[partnerId] ? partnerId : (_state$players$find$i = (_state$players$find = state.players.find(function (player) {
+    return player.id !== myPlayerId;
+  })) === null || _state$players$find === void 0 ? void 0 : _state$players$find.id) !== null && _state$players$find$i !== void 0 ? _state$players$find$i : 0;
+  var canStart = isTurnPlayer && state.phase === "play" && state.rolled && !negotiation && selectedPartner !== myPlayerId && canPlayerOffer(state, selectedPartner, draftOffer);
+  var canCounter = negotiation && !negotiation.decision && myPlayerId === negotiation.awaiting && canPlayerOffer(state, negotiation.partner, draftOffer);
+  var canIntervene = negotiation && myPlayerId !== negotiation.turnPlayer && myPlayerId !== negotiation.partner && canPlayerOffer(state, myPlayerId, draftOffer) && isBetterOffer(draftOffer, negotiation.currentOffer, negotiation.usedCombos);
+  var canShowIntervention = negotiation && canPotentiallyIntervene(state, myPlayerId);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "negotiation"
+  }, /*#__PURE__*/React.createElement("h2", null, "\u30D7\u30EC\u30A4\u30E4\u30FC\u9593\u4EA4\u6E09"), !negotiation && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+    className: "partnerSelect"
+  }, "\u4EA4\u63DB\u76F8\u624B", /*#__PURE__*/React.createElement("select", {
+    value: selectedPartner,
+    onChange: function onChange(event) {
+      return setPartnerId(Number(event.target.value));
+    }
+  }, state.players.filter(function (player) {
+    return player.id !== myPlayerId;
+  }).map(function (player) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: player.id,
+      value: player.id
+    }, player.name);
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "bundleGrid"
+  }, /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "\u3042\u306A\u305F\u304C\u6E21\u3059",
+    value: turnGives,
+    onChange: setTurnGives
+  }), /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "\u76F8\u624B\u304C\u6E21\u3059",
+    value: partnerGives,
+    onChange: setPartnerGives
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "startNegotiation",
+        partnerId: selectedPartner,
+        turnGives: turnGives,
+        partnerGives: partnerGives
+      });
+    },
+    disabled: !canStart
+  }, "\u4EA4\u63DB\u3092\u7533\u3057\u51FA\u308B"), /*#__PURE__*/React.createElement("p", {
+    className: "spaceportNote"
+  }, "\u53CC\u65B9\u304C1\u679A\u4EE5\u4E0A\u51FA\u3059\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002\u6301\u3063\u3066\u3044\u306A\u3044\u8CC7\u6E90\u306F\u63D0\u793A\u3067\u304D\u307E\u305B\u3093\u3002")), negotiation && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "currentOffer"
+  }, /*#__PURE__*/React.createElement("strong", null, state.players[negotiation.turnPlayer].name, " \u21C4 ", state.players[negotiation.partner].name), /*#__PURE__*/React.createElement("p", null, state.players[negotiation.turnPlayer].name, " \u304C\u6E21\u3059: ", bundleText(negotiation.currentOffer.turnGives)), /*#__PURE__*/React.createElement("p", null, state.players[negotiation.partner].name, " \u304C\u6E21\u3059: ", bundleText(negotiation.currentOffer.partnerGives)), negotiation.awaiting !== null && /*#__PURE__*/React.createElement("small", null, "\u8FD4\u7B54\u5F85\u3061: ", state.players[negotiation.awaiting].name), negotiation.decision && /*#__PURE__*/React.createElement("small", null, negotiation.decision.type === "accepted" ? "受諾済み" : "拒否済み", ": ", state.players[negotiation.decision.by].name)), !negotiation.decision && myPlayerId === negotiation.awaiting && /*#__PURE__*/React.createElement("div", {
+    className: "negotiationActions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "primary",
+    onClick: function onClick() {
+      return onEvent({
+        type: "acceptNegotiation"
+      });
+    }
+  }, "\u53D7\u3051\u5165\u308C\u308B"), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "rejectNegotiation"
+      });
+    }
+  }, "\u62D2\u5426")), negotiation.decision && myPlayerId === negotiation.turnPlayer && /*#__PURE__*/React.createElement("button", {
+    className: "primary",
+    onClick: function onClick() {
+      return onEvent({
+        type: "finalizeNegotiation"
+      });
+    }
+  }, "\u4EA4\u6E09\u3092\u78BA\u5B9A"), (!negotiation.decision && myPlayerId === negotiation.awaiting || canShowIntervention) && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "bundleGrid"
+  }, /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "".concat(state.players[negotiation.turnPlayer].name, " \u304C\u6E21\u3059"),
+    value: turnGives,
+    onChange: setTurnGives
+  }), /*#__PURE__*/React.createElement(ResourceBundleInput, {
+    title: "".concat(canShowIntervention ? me.name : state.players[negotiation.partner].name, " \u304C\u6E21\u3059"),
+    value: partnerGives,
+    onChange: setPartnerGives
+  })), myPlayerId === negotiation.awaiting && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "counterNegotiation",
+        turnGives: turnGives,
+        partnerGives: partnerGives
+      });
+    },
+    disabled: !canCounter
+  }, "\u6761\u4EF6\u5909\u66F4\u3092\u63D0\u793A"), canShowIntervention && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return onEvent({
+        type: "interveneNegotiation",
+        turnGives: turnGives,
+        partnerGives: partnerGives
+      });
+    },
+    disabled: !canIntervene
+  }, "\u3088\u308A\u826F\u3044\u6761\u4EF6\u3067\u4ECB\u5165")), /*#__PURE__*/React.createElement("div", {
+    className: "negotiationHistory"
+  }, negotiation.history.map(function (line, index) {
+    return /*#__PURE__*/React.createElement("p", {
+      key: index
+    }, line);
+  }))));
+}
+function HelpPanel() {
+  var _useState7 = useState("rules"),
+    _useState8 = _slicedToArray(_useState7, 2),
+    tab = _useState8[0],
+    setTab = _useState8[1];
   return /*#__PURE__*/React.createElement("div", {
     className: "helpBox"
   }, /*#__PURE__*/React.createElement("div", {
@@ -749,14 +1098,14 @@ function HelpPanel() {
   }, /*#__PURE__*/React.createElement("h2", null, "\u65B0\u5929\u5730\u30AB\u30FC\u30C9"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TV"), /*#__PURE__*/React.createElement("dd", null, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u307E\u3059\u30023\u679A\u4EE5\u4E0A\u3067\u6700\u5927TV\u306E\u5019\u88DC\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u822A\u8DEF\u6574\u5099"), /*#__PURE__*/React.createElement("dd", null, "\u7121\u6599\u3067\u661F\u9593\u822A\u8DEF\u30922\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5FB4\u53CE"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u3092\u4ED6\u30D7\u30EC\u30A4\u30E4\u30FC\u5168\u54E1\u304B\u3089\u96C6\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u88DC\u7D66\u885B\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u30922\u3064\u53D7\u3051\u53D6\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u52DD\u5229\u8A18\u9332"), /*#__PURE__*/React.createElement("dd", null, "\u6301\u3063\u3066\u3044\u308B\u3060\u3051\u30671 VP\u3067\u3059\u3002")))));
 }
 function usePeerRoom(state, setState, roomId, myPlayerId) {
-  var _useState3 = useState({
+  var _useState9 = useState({
       mode: "local",
       status: "ローカル",
       share: ""
     }),
-    _useState4 = _slicedToArray(_useState3, 2),
-    net = _useState4[0],
-    setNet = _useState4[1];
+    _useState0 = _slicedToArray(_useState9, 2),
+    net = _useState0[0],
+    setNet = _useState0[1];
   var peerRef = useRef(null);
   var connections = useRef([]);
   var stateRef = useRef(state);
@@ -881,10 +1230,10 @@ function usePeerRoom(state, setState, roomId, myPlayerId) {
     send: send
   };
 }
-function Board(_ref10) {
-  var state = _ref10.state,
-    onEvent = _ref10.onEvent,
-    myPlayerId = _ref10.myPlayerId;
+function Board(_ref12) {
+  var state = _ref12.state,
+    onEvent = _ref12.onEvent,
+    myPlayerId = _ref12.myPlayerId;
   var active = currentPlayer(state).id;
   var canClick = state.phase === "setup" ? active === myPlayerId : state.turn === myPlayerId;
   return /*#__PURE__*/React.createElement("svg", {
@@ -1041,33 +1390,33 @@ function App() {
   var initialRoom = useMemo(function () {
     return new URLSearchParams(location.hash.replace("#", "")).get("room") || crypto.randomUUID().slice(0, 8);
   }, []);
-  var _useState5 = useState(function () {
+  var _useState1 = useState(function () {
       return createGame(initialRoom);
     }),
-    _useState6 = _slicedToArray(_useState5, 2),
-    state = _useState6[0],
-    setState = _useState6[1];
-  var _useState7 = useState(function () {
+    _useState10 = _slicedToArray(_useState1, 2),
+    state = _useState10[0],
+    setState = _useState10[1];
+  var _useState11 = useState(function () {
       return Number(new URLSearchParams(location.hash.replace("#", "")).get("p") || 0);
     }),
-    _useState8 = _slicedToArray(_useState7, 2),
-    myPlayerId = _useState8[0],
-    setMyPlayerId = _useState8[1];
-  var _useState9 = useState({
+    _useState12 = _slicedToArray(_useState11, 2),
+    myPlayerId = _useState12[0],
+    setMyPlayerId = _useState12[1];
+  var _useState13 = useState({
       give: "rock",
       take: "food"
     }),
-    _useState0 = _slicedToArray(_useState9, 2),
-    trade = _useState0[0],
-    setTrade = _useState0[1];
-  var _useState1 = useState({
+    _useState14 = _slicedToArray(_useState13, 2),
+    trade = _useState14[0],
+    setTrade = _useState14[1];
+  var _useState15 = useState({
       resource: "rock",
       a: "rock",
       b: "material"
     }),
-    _useState10 = _slicedToArray(_useState1, 2),
-    devChoice = _useState10[0],
-    setDevChoice = _useState10[1];
+    _useState16 = _slicedToArray(_useState15, 2),
+    devChoice = _useState16[0],
+    setDevChoice = _useState16[1];
   var _usePeerRoom = usePeerRoom(state, setState, state.id, myPlayerId),
     net = _usePeerRoom.net,
     host = _usePeerRoom.host,
@@ -1161,7 +1510,7 @@ function App() {
         type: "endTurn"
       });
     },
-    disabled: !actionable || state.phase !== "play"
+    disabled: !actionable || state.phase !== "play" || !!state.negotiation
   }, /*#__PURE__*/React.createElement(Undo2, {
     size: 18
   }), " \u30BF\u30FC\u30F3\u7D42\u4E86")), /*#__PURE__*/React.createElement("div", {
@@ -1259,7 +1608,11 @@ function App() {
     }
   }, "\u4EA4\u63DB"), /*#__PURE__*/React.createElement("p", {
     className: "spaceportNote"
-  }, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8: ", spaceportText(state, myPlayerId))), /*#__PURE__*/React.createElement("div", {
+  }, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8: ", spaceportText(state, myPlayerId))), /*#__PURE__*/React.createElement(NegotiationPanel, {
+    state: state,
+    myPlayerId: myPlayerId,
+    onEvent: act
+  }), /*#__PURE__*/React.createElement("div", {
     className: "frontiers"
   }, /*#__PURE__*/React.createElement("h2", null, "\u624B\u672D\u306E\u65B0\u5929\u5730"), /*#__PURE__*/React.createElement("div", {
     className: "miniControls"
