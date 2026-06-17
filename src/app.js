@@ -338,10 +338,18 @@ function canPotentiallyIntervene(state, playerId) {
 function spaceportName(type) {
   return type ? "".concat(RESOURCES[type].name, " 2:1") : "3:1";
 }
+function visualTileNumberMap() {
+  return new Map([].concat(HEX_COORDS).sort(function (a, b) {
+    return a.r === b.r ? hexToPixel(a.q, a.r).x - hexToPixel(b.q, b.r).x : a.r - b.r;
+  }).map(function (coord, index) {
+    return ["".concat(coord.q, ":").concat(coord.r), index + 1];
+  }));
+}
 function makeBoard(seedText) {
   var random = mulberry32(hashString(seedText));
   var terrains = shuffle(TILE_SETUP, random);
   var nums = shuffle(NUMBERS, random);
+  var boardNumbers = visualTileNumberMap();
   var numIndex = 0;
   var vertices = new Map();
   var edges = new Map();
@@ -378,7 +386,8 @@ function makeBoard(seedText) {
       edges.get(key).tiles.push(index);
     }
     return _objectSpread(_objectSpread({
-      id: index
+      id: index,
+      boardNumber: boardNumbers.get("".concat(coord.q, ":").concat(coord.r))
     }, coord), {}, {
       center: center,
       terrain: terrain,
@@ -400,11 +409,10 @@ function makeBoard(seedText) {
     incidentEdges[e.a].push(e.id);
     incidentEdges[e.b].push(e.id);
   });
-  var numberedTiles = _toConsumableArray(tiles).sort(function (a, b) {
-    return Math.abs(a.center.y - b.center.y) > 1 ? a.center.y - b.center.y : a.center.x - b.center.x;
-  });
   var spaceports = FIXED_SPACEPORTS.map(function (spaceport, index) {
-    var tile = numberedTiles[spaceport.tileNumber - 1];
+    var tile = tiles.find(function (item) {
+      return item.boardNumber === spaceport.tileNumber;
+    });
     var sideIndex = HEX_SIDE_INDEX[spaceport.side];
     var aId = tile.corners[sideIndex];
     var bId = tile.corners[(sideIndex + 1) % 6];
@@ -458,6 +466,7 @@ function createGame() {
       return _objectSpread(_objectSpread({}, player), {}, {
         resources: emptyResources(),
         hiddenNewFrontiers: [],
+        playedNewFrontiers: [],
         playedTv: 0,
         bonus: {
           longest: false,
@@ -470,6 +479,7 @@ function createGame() {
     deck: shuffle(DEV_DECK, mulberry32(hashString("".concat(roomId, ":deck")))),
     discard: [],
     turn: 0,
+    turnCount: 0,
     phase: "setup",
     setupStep: 0,
     setupOrder: [0, 1, 2, 3, 3, 2, 1, 0],
@@ -503,6 +513,33 @@ function pay(player, cost) {
 function resourceText(resources) {
   return RESOURCE_KEYS.map(function (key) {
     return "".concat(RESOURCES[key].name).concat(resources[key] || 0);
+  }).join(" / ");
+}
+function visibleResourceText(player, viewerId) {
+  if (player.id === viewerId) return resourceText(player.resources);
+  return "\u8CC7\u6E90 ".concat(totalResources(player.resources), "\u679A");
+}
+function frontierType(card) {
+  return typeof card === "string" ? card : card.type;
+}
+function frontierBoughtTurn(card) {
+  return typeof card === "string" ? -1 : card.boughtTurn;
+}
+function canPlayFrontier(card, state) {
+  return frontierType(card) !== "point" && frontierBoughtTurn(card) < state.turnCount;
+}
+function publicPlayedFrontiers(player) {
+  var played = player.playedNewFrontiers || [];
+  if (!played.length) return "使用済みなし";
+  var counts = played.reduce(function (acc, type) {
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
+  return Object.entries(counts).map(function (_ref9) {
+    var _ref0 = _slicedToArray(_ref9, 2),
+      type = _ref0[0],
+      count = _ref0[1];
+    return "".concat(DEV_NAMES[type]).concat(count);
   }).join(" / ");
 }
 function playerSpaceports(state, playerId) {
@@ -545,7 +582,7 @@ function getVp(state, playerId) {
     return b.player === playerId && b.type === "star";
   }).length;
   var points = state.players[playerId].hiddenNewFrontiers.filter(function (card) {
-    return card === "point";
+    return frontierType(card) === "point";
   }).length;
   var bonus = (state.players[playerId].bonus.longest ? 2 : 0) + (state.players[playerId].bonus.largestTv ? 2 : 0);
   return planets + stars * 2 + points + bonus;
@@ -638,6 +675,7 @@ function moveTurn(state) {
     return;
   }
   state.turn = (state.turn + 1) % 4;
+  state.turnCount = (state.turnCount || 0) + 1;
   state.rolled = false;
   state.dice = null;
   state.action = "roll";
@@ -758,25 +796,34 @@ function reducer(state, event) {
     if (actor !== next.turn || !next.rolled || !canAfford(player, COSTS.frontier) || next.deck.length === 0) return next;
     pay(player, COSTS.frontier);
     var card = next.deck.pop();
-    player.hiddenNewFrontiers.push(card);
+    player.hiddenNewFrontiers.push({
+      type: card,
+      boughtTurn: next.turnCount || 0
+    });
     addLog(next, "".concat(player.name, " \u304C\u65B0\u5929\u5730\u3092\u7372\u5F97\u3057\u307E\u3057\u305F\u3002"));
     return next;
   }
   if (event.type === "playDev") {
-    if (actor !== next.turn || !player.hiddenNewFrontiers.includes(event.card) || event.card === "point") return next;
-    player.hiddenNewFrontiers.splice(player.hiddenNewFrontiers.indexOf(event.card), 1);
-    next.discard.push(event.card);
-    if (event.card === "tv") {
+    var cardIndex = player.hiddenNewFrontiers.findIndex(function (card) {
+      return frontierType(card) === event.card && canPlayFrontier(card, next);
+    });
+    if (actor !== next.turn || cardIndex < 0) return next;
+    var _card = player.hiddenNewFrontiers.splice(cardIndex, 1)[0];
+    var type = frontierType(_card);
+    player.playedNewFrontiers = player.playedNewFrontiers || [];
+    player.playedNewFrontiers.push(type);
+    next.discard.push(type);
+    if (type === "tv") {
       player.playedTv += 1;
       next.action = "criminal";
       addLog(next, "".concat(player.name, " \u304CTV\u3092\u8D77\u52D5\u3002\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u307E\u3059\u3002"));
     }
-    if (event.card === "route") {
+    if (type === "route") {
       next.action = "freeRoute";
       next.freeRoutesLeft = 2;
       addLog(next, "".concat(player.name, " \u304C\u822A\u8DEF\u6574\u5099\u3092\u5B9F\u884C\u3002\u7121\u6599\u30672\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002"));
     }
-    if (event.card === "collect") {
+    if (type === "collect") {
       var key = event.resource || RESOURCE_KEYS[0];
       var total = 0;
       next.players.forEach(function (other) {
@@ -787,7 +834,7 @@ function reducer(state, event) {
       player.resources[key] += total;
       addLog(next, "".concat(player.name, " \u304C\u5FB4\u53CE\u3067").concat(RESOURCES[key].name).concat(total, "\u3092\u96C6\u3081\u307E\u3057\u305F\u3002"));
     }
-    if (event.card === "plenty") {
+    if (type === "plenty") {
       addRes(player.resources, event.a || "rock", 1);
       addRes(player.resources, event.b || "material", 1);
       addLog(next, "".concat(player.name, " \u304C\u88DC\u7D66\u885B\u661F\u304B\u3089\u8CC7\u6E90\u3092\u53D7\u3051\u53D6\u308A\u307E\u3057\u305F\u3002"));
@@ -910,14 +957,14 @@ function tileName(tile) {
   if (tile.terrain === "desert") return "中性子星";
   return RESOURCES[tile.terrain].terrain;
 }
-function Cost(_ref9) {
-  var cost = _ref9.cost;
+function Cost(_ref1) {
+  var cost = _ref1.cost;
   return /*#__PURE__*/React.createElement("span", {
     className: "cost"
-  }, Object.entries(cost).map(function (_ref0) {
-    var _ref1 = _slicedToArray(_ref0, 2),
-      key = _ref1[0],
-      value = _ref1[1];
+  }, Object.entries(cost).map(function (_ref10) {
+    var _ref11 = _slicedToArray(_ref10, 2),
+      key = _ref11[0],
+      value = _ref11[1];
     return /*#__PURE__*/React.createElement("span", {
       key: key,
       style: {
@@ -926,10 +973,10 @@ function Cost(_ref9) {
     }, RESOURCES[key].name, " ", value);
   }));
 }
-function ResourceBundleInput(_ref10) {
-  var title = _ref10.title,
-    value = _ref10.value,
-    _onChange = _ref10.onChange;
+function ResourceBundleInput(_ref12) {
+  var title = _ref12.title,
+    value = _ref12.value,
+    _onChange = _ref12.onChange;
   return /*#__PURE__*/React.createElement("div", {
     className: "bundleInput"
   }, /*#__PURE__*/React.createElement("h3", null, title), RESOURCE_KEYS.map(function (key) {
@@ -949,11 +996,11 @@ function ResourceBundleInput(_ref10) {
 function emptyBundle() {
   return emptyResources(0);
 }
-function NegotiationPanel(_ref11) {
+function NegotiationPanel(_ref13) {
   var _state$players$find$i, _state$players$find;
-  var state = _ref11.state,
-    myPlayerId = _ref11.myPlayerId,
-    onEvent = _ref11.onEvent;
+  var state = _ref13.state,
+    myPlayerId = _ref13.myPlayerId,
+    onEvent = _ref13.onEvent;
   var _useState = useState((myPlayerId + 1) % 4),
     _useState2 = _slicedToArray(_useState, 2),
     partnerId = _useState2[0],
@@ -1245,10 +1292,10 @@ function usePeerRoom(state, setState, roomId, myPlayerId) {
     send: send
   };
 }
-function Board(_ref12) {
-  var state = _ref12.state,
-    onEvent = _ref12.onEvent,
-    myPlayerId = _ref12.myPlayerId;
+function Board(_ref14) {
+  var state = _ref14.state,
+    onEvent = _ref14.onEvent,
+    myPlayerId = _ref14.myPlayerId;
   var active = currentPlayer(state).id;
   var canClick = state.phase === "setup" ? active === myPlayerId : state.turn === myPlayerId;
   return /*#__PURE__*/React.createElement("svg", {
@@ -1671,15 +1718,15 @@ function App() {
     className: "cards"
   }, me.hiddenNewFrontiers.map(function (card, index) {
     return /*#__PURE__*/React.createElement("button", {
-      key: "".concat(card, "-").concat(index),
+      key: "".concat(frontierType(card), "-").concat(frontierBoughtTurn(card), "-").concat(index),
       onClick: function onClick() {
         return act(_objectSpread({
           type: "playDev",
-          card: card
+          card: frontierType(card)
         }, devChoice));
       },
-      disabled: card === "point"
-    }, DEV_NAMES[card]);
+      disabled: !canPlayFrontier(card, state)
+    }, DEV_NAMES[frontierType(card)], !canPlayFrontier(card, state) && frontierType(card) !== "point" ? " 次ターン" : "");
   }), !me.hiddenNewFrontiers.length && /*#__PURE__*/React.createElement("span", {
     className: "muted"
   }, "\u306A\u3057"))), /*#__PURE__*/React.createElement(HelpPanel, null))), /*#__PURE__*/React.createElement("section", {
@@ -1691,7 +1738,11 @@ function App() {
         "--player": player.color
       },
       className: player.id === active.id ? "active" : ""
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("strong", null, player.name), /*#__PURE__*/React.createElement("span", null, getVp(state, player.id), " VP")), /*#__PURE__*/React.createElement("p", null, resourceText(player.resources)), /*#__PURE__*/React.createElement("small", null, "TV ", player.playedTv, " / \u65B0\u5929\u5730 ", player.hiddenNewFrontiers.length, " / ", spaceportText(state, player.id), " ", player.bonus.longest ? " / 最長航路" : "", player.bonus.largestTv ? " / 最大TV" : ""));
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("strong", null, player.name, player.bonus.longest && /*#__PURE__*/React.createElement("span", {
+      className: "badge"
+    }, "\u6700\u9577\u661F\u9593\u822A\u8DEF"), player.bonus.largestTv && /*#__PURE__*/React.createElement("span", {
+      className: "badge"
+    }, "\u6700\u5927TV\u529B")), /*#__PURE__*/React.createElement("span", null, getVp(state, player.id), " VP")), /*#__PURE__*/React.createElement("p", null, visibleResourceText(player, myPlayerId)), /*#__PURE__*/React.createElement("small", null, "TV ", player.playedTv, " / \u65B0\u5929\u5730 ", player.hiddenNewFrontiers.length, "\u679A / \u516C\u958B\u6E08\u307F: ", publicPlayedFrontiers(player), " / ", spaceportText(state, player.id)));
   })), /*#__PURE__*/React.createElement("section", {
     className: "log"
   }, /*#__PURE__*/React.createElement("h2", null, "\u822A\u884C\u30ED\u30B0"), state.winner !== null && /*#__PURE__*/React.createElement("div", {

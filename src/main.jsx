@@ -243,10 +243,19 @@ function spaceportName(type) {
   return type ? `${RESOURCES[type].name} 2:1` : "3:1";
 }
 
+function visualTileNumberMap() {
+  return new Map(
+    [...HEX_COORDS]
+      .sort((a, b) => (a.r === b.r ? hexToPixel(a.q, a.r).x - hexToPixel(b.q, b.r).x : a.r - b.r))
+      .map((coord, index) => [`${coord.q}:${coord.r}`, index + 1])
+  );
+}
+
 function makeBoard(seedText) {
   const random = mulberry32(hashString(seedText));
   const terrains = shuffle(TILE_SETUP, random);
   const nums = shuffle(NUMBERS, random);
+  const boardNumbers = visualTileNumberMap();
   let numIndex = 0;
   const vertices = new Map();
   const edges = new Map();
@@ -270,7 +279,7 @@ function makeBoard(seedText) {
       if (!edges.has(key)) edges.set(key, { id: key, a: corners[i], b: corners[(i + 1) % 6], tiles: [] });
       edges.get(key).tiles.push(index);
     }
-    return { id: index, ...coord, center, terrain, number, corners };
+    return { id: index, boardNumber: boardNumbers.get(`${coord.q}:${coord.r}`), ...coord, center, terrain, number, corners };
   });
 
   const vertexList = [...vertices.values()];
@@ -287,9 +296,8 @@ function makeBoard(seedText) {
     incidentEdges[e.a].push(e.id);
     incidentEdges[e.b].push(e.id);
   });
-  const numberedTiles = [...tiles].sort((a, b) => (Math.abs(a.center.y - b.center.y) > 1 ? a.center.y - b.center.y : a.center.x - b.center.x));
   const spaceports = FIXED_SPACEPORTS.map((spaceport, index) => {
-      const tile = numberedTiles[spaceport.tileNumber - 1];
+      const tile = tiles.find((item) => item.boardNumber === spaceport.tileNumber);
       const sideIndex = HEX_SIDE_INDEX[spaceport.side];
       const aId = tile.corners[sideIndex];
       const bId = tile.corners[(sideIndex + 1) % 6];
@@ -336,6 +344,7 @@ function createGame(roomId = crypto.randomUUID().slice(0, 8)) {
       ...player,
       resources: emptyResources(),
       hiddenNewFrontiers: [],
+      playedNewFrontiers: [],
       playedTv: 0,
       bonus: { longest: false, largestTv: false },
     })),
@@ -344,6 +353,7 @@ function createGame(roomId = crypto.randomUUID().slice(0, 8)) {
     deck: shuffle(DEV_DECK, mulberry32(hashString(`${roomId}:deck`))),
     discard: [],
     turn: 0,
+    turnCount: 0,
     phase: "setup",
     setupStep: 0,
     setupOrder: [0, 1, 2, 3, 3, 2, 1, 0],
@@ -371,6 +381,33 @@ function pay(player, cost) {
 
 function resourceText(resources) {
   return RESOURCE_KEYS.map((key) => `${RESOURCES[key].name}${resources[key] || 0}`).join(" / ");
+}
+
+function visibleResourceText(player, viewerId) {
+  if (player.id === viewerId) return resourceText(player.resources);
+  return `資源 ${totalResources(player.resources)}枚`;
+}
+
+function frontierType(card) {
+  return typeof card === "string" ? card : card.type;
+}
+
+function frontierBoughtTurn(card) {
+  return typeof card === "string" ? -1 : card.boughtTurn;
+}
+
+function canPlayFrontier(card, state) {
+  return frontierType(card) !== "point" && frontierBoughtTurn(card) < state.turnCount;
+}
+
+function publicPlayedFrontiers(player) {
+  const played = player.playedNewFrontiers || [];
+  if (!played.length) return "使用済みなし";
+  const counts = played.reduce((acc, type) => {
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
+  return Object.entries(counts).map(([type, count]) => `${DEV_NAMES[type]}${count}`).join(" / ");
 }
 
 function playerSpaceports(state, playerId) {
@@ -404,7 +441,7 @@ function addLog(state, text) {
 function getVp(state, playerId) {
   const planets = Object.values(state.buildings).filter((b) => b.player === playerId && b.type === "planet").length;
   const stars = Object.values(state.buildings).filter((b) => b.player === playerId && b.type === "star").length;
-  const points = state.players[playerId].hiddenNewFrontiers.filter((card) => card === "point").length;
+  const points = state.players[playerId].hiddenNewFrontiers.filter((card) => frontierType(card) === "point").length;
   const bonus = (state.players[playerId].bonus.longest ? 2 : 0) + (state.players[playerId].bonus.largestTv ? 2 : 0);
   return planets + stars * 2 + points + bonus;
 }
@@ -485,6 +522,7 @@ function moveTurn(state) {
     return;
   }
   state.turn = (state.turn + 1) % 4;
+  state.turnCount = (state.turnCount || 0) + 1;
   state.rolled = false;
   state.dice = null;
   state.action = "roll";
@@ -593,25 +631,29 @@ function reducer(state, event) {
     if (actor !== next.turn || !next.rolled || !canAfford(player, COSTS.frontier) || next.deck.length === 0) return next;
     pay(player, COSTS.frontier);
     const card = next.deck.pop();
-    player.hiddenNewFrontiers.push(card);
+    player.hiddenNewFrontiers.push({ type: card, boughtTurn: next.turnCount || 0 });
     addLog(next, `${player.name} が新天地を獲得しました。`);
     return next;
   }
   if (event.type === "playDev") {
-    if (actor !== next.turn || !player.hiddenNewFrontiers.includes(event.card) || event.card === "point") return next;
-    player.hiddenNewFrontiers.splice(player.hiddenNewFrontiers.indexOf(event.card), 1);
-    next.discard.push(event.card);
-    if (event.card === "tv") {
+    const cardIndex = player.hiddenNewFrontiers.findIndex((card) => frontierType(card) === event.card && canPlayFrontier(card, next));
+    if (actor !== next.turn || cardIndex < 0) return next;
+    const card = player.hiddenNewFrontiers.splice(cardIndex, 1)[0];
+    const type = frontierType(card);
+    player.playedNewFrontiers = player.playedNewFrontiers || [];
+    player.playedNewFrontiers.push(type);
+    next.discard.push(type);
+    if (type === "tv") {
       player.playedTv += 1;
       next.action = "criminal";
       addLog(next, `${player.name} がTVを起動。ユニヴァース クリミナルを移動します。`);
     }
-    if (event.card === "route") {
+    if (type === "route") {
       next.action = "freeRoute";
       next.freeRoutesLeft = 2;
       addLog(next, `${player.name} が航路整備を実行。無料で2本まで建設できます。`);
     }
-    if (event.card === "collect") {
+    if (type === "collect") {
       const key = event.resource || RESOURCE_KEYS[0];
       let total = 0;
       next.players.forEach((other) => {
@@ -622,7 +664,7 @@ function reducer(state, event) {
       player.resources[key] += total;
       addLog(next, `${player.name} が徴収で${RESOURCES[key].name}${total}を集めました。`);
     }
-    if (event.card === "plenty") {
+    if (type === "plenty") {
       addRes(player.resources, event.a || "rock", 1);
       addRes(player.resources, event.b || "material", 1);
       addLog(next, `${player.name} が補給衛星から資源を受け取りました。`);
@@ -1273,8 +1315,12 @@ function App() {
             </div>
             <div className="cards">
               {me.hiddenNewFrontiers.map((card, index) => (
-                <button key={`${card}-${index}`} onClick={() => act({ type: "playDev", card, ...devChoice })} disabled={card === "point"}>
-                  {DEV_NAMES[card]}
+                <button
+                  key={`${frontierType(card)}-${frontierBoughtTurn(card)}-${index}`}
+                  onClick={() => act({ type: "playDev", card: frontierType(card), ...devChoice })}
+                  disabled={!canPlayFrontier(card, state)}
+                >
+                  {DEV_NAMES[frontierType(card)]}{!canPlayFrontier(card, state) && frontierType(card) !== "point" ? " 次ターン" : ""}
                 </button>
               ))}
               {!me.hiddenNewFrontiers.length && <span className="muted">なし</span>}
@@ -1289,11 +1335,15 @@ function App() {
         {state.players.map((player) => (
           <article key={player.id} style={{ "--player": player.color }} className={player.id === active.id ? "active" : ""}>
             <div>
-              <strong>{player.name}</strong>
+              <strong>
+                {player.name}
+                {player.bonus.longest && <span className="badge">最長星間航路</span>}
+                {player.bonus.largestTv && <span className="badge">最大TV力</span>}
+              </strong>
               <span>{getVp(state, player.id)} VP</span>
             </div>
-            <p>{resourceText(player.resources)}</p>
-            <small>TV {player.playedTv} / 新天地 {player.hiddenNewFrontiers.length} / {spaceportText(state, player.id)} {player.bonus.longest ? " / 最長航路" : ""}{player.bonus.largestTv ? " / 最大TV" : ""}</small>
+            <p>{visibleResourceText(player, myPlayerId)}</p>
+            <small>TV {player.playedTv} / 新天地 {player.hiddenNewFrontiers.length}枚 / 公開済み: {publicPlayedFrontiers(player)} / {spaceportText(state, player.id)}</small>
           </article>
         ))}
       </section>
