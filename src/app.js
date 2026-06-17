@@ -74,28 +74,28 @@ var Undo2 = function Undo2() {
 };
 var RESOURCES = {
   rock: {
-    name: "岩石",
-    terrain: "岩石惑星",
+    name: "レアメタル",
+    terrain: "鉱物次元",
     color: "#a3544a"
   },
   rare: {
-    name: "レアメタル",
-    terrain: "鉱石惑星",
+    name: "ナノマシン",
+    terrain: "機械次元",
     color: "#64748b"
   },
   material: {
-    name: "資材",
-    terrain: "資材工場",
+    name: "建材",
+    terrain: "熱帯次元",
     color: "#2f855a"
   },
   nano: {
-    name: "ナノマシン",
-    terrain: "ナノマシン工場",
+    name: "皮革",
+    terrain: "大草原",
     color: "#7c9a3e"
   },
   food: {
-    name: "食料",
-    terrain: "水耕栽培",
+    name: "穀物",
+    terrain: "肥沃な大地",
     color: "#d5a11e"
   }
 };
@@ -145,9 +145,9 @@ var BUILD_LIMITS = {
 };
 var DEV_DECK = [].concat(_toConsumableArray(Array(14).fill("tv")), _toConsumableArray(Array(2).fill("route")), _toConsumableArray(Array(2).fill("collect")), _toConsumableArray(Array(2).fill("plenty")), _toConsumableArray(Array(5).fill("point")));
 var DEV_NAMES = {
-  tv: "TV",
-  route: "航路整備",
-  collect: "徴収",
+  tv: "TVA",
+  route: "領界路開通",
+  collect: "押収",
   plenty: "補給衛星",
   point: "勝利記録"
 };
@@ -197,10 +197,10 @@ var HEX_SIDE_INDEX = {
   upperRight: 5
 };
 var BUILD_LABEL = {
-  route: "星間航路",
-  planet: "惑星",
-  star: "恒星",
-  frontier: "新天地"
+  route: "領界路",
+  planet: "小都市",
+  star: "大都市",
+  frontier: "未知への旅"
 };
 var TILE_SETUP = ["material", "nano", "rock", "food", "rare", "rock", "food", "material", "nano", "desert", "material", "rare", "material", "food", "nano", "rock", "rare", "food", "nano"];
 var RESOURCE_TILE_SETUP = TILE_SETUP.filter(function (tile) {
@@ -526,7 +526,7 @@ function createGame() {
     pendingSteal: null,
     criminalMover: null,
     privateMessages: [],
-    log: ["宇宙航路の準備が整いました。惑星と星間航路を初期配置してください。"],
+    log: ["領界の準備が整いました。小都市と領界路を初期配置してください。"],
     winner: null
   };
 }
@@ -598,7 +598,7 @@ function tradeRateFor(state, playerId, give) {
 }
 function spaceportText(state, playerId) {
   var ports = playerSpaceports(state, playerId);
-  if (!ports.length) return "スペースポートなし";
+  if (!ports.length) return "次元門なし";
   return ports.map(function (port) {
     return spaceportName(port.type);
   }).join(" / ");
@@ -661,7 +661,7 @@ function startCriminalMove(state, actor) {
 function finishCriminalMove(state, actor, tileId) {
   if (tileId === state.criminalTile) return false;
   state.criminalTile = tileId;
-  addLog(state, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u304C".concat(tileName(state.board.tiles[tileId]), "\u3078\u79FB\u52D5\u3057\u307E\u3057\u305F\u3002"));
+  addLog(state, "\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u304C".concat(tileName(state.board.tiles[tileId]), "\u3078\u79FB\u52D5\u3057\u307E\u3057\u305F\u3002"));
   var victims = adjacentStealVictims(state, tileId, actor);
   if (victims.length) {
     state.pendingSteal = {
@@ -860,7 +860,7 @@ function produce(state, total) {
       state.action = "discard";
       addLog(state, "7が出ました。資源8枚以上のプレイヤーは半分を捨てます。");
     } else {
-      addLog(state, "7が出ました。ユニヴァース クリミナルを任意のタイルへ移動できます。");
+      addLog(state, "7が出ました。ラヴェジャーズを任意のタイルへ移動できます。");
       startCriminalMove(state, state.turn);
     }
     return;
@@ -934,7 +934,7 @@ function reducer(state, event) {
     addLog(next, "".concat(player.name, " \u304C\u8CC7\u6E90").concat(need, "\u679A\u3092\u6368\u3066\u307E\u3057\u305F\u3002"));
     if (!pendingDiscardEntries(next).length) {
       next.pendingDiscards = {};
-      addLog(next, "全員の廃棄が完了しました。ユニヴァース クリミナルを移動してください。");
+      addLog(next, "全員の廃棄が完了しました。ラヴェジャーズを移動してください。");
       startCriminalMove(next, next.turn);
     } else {
       next.turnStage = "production";
@@ -980,7 +980,7 @@ function reducer(state, event) {
       };
       next.setupPendingVertex = vertexId;
       next.action = "route";
-      addLog(next, "".concat(player.name, " \u304C\u60D1\u661F\u3092\u914D\u7F6E\u3057\u307E\u3057\u305F\u3002\u661F\u9593\u822A\u8DEF\u3092\u63A5\u7D9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
+      addLog(next, "".concat(player.name, " \u304C\u5C0F\u90FD\u5E02\u3092\u914D\u7F6E\u3057\u307E\u3057\u305F\u3002\u9818\u754C\u8DEF\u3092\u63A5\u7D9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
       return next;
     }
     if (actor !== next.turn || !isMainPhase(next)) return next;
@@ -990,13 +990,13 @@ function reducer(state, event) {
         player: actor,
         type: "planet"
       };
-      addLog(next, "".concat(player.name, " \u304C\u60D1\u661F\u3092\u5EFA\u8A2D\u3057\u307E\u3057\u305F\u3002"));
+      addLog(next, "".concat(player.name, " \u304C\u5C0F\u90FD\u5E02\u3092\u5EFA\u8A2D\u3057\u307E\u3057\u305F\u3002"));
     } else if (next.action === "star") {
       var building = next.buildings[vertexId];
       if ((building === null || building === void 0 ? void 0 : building.player) === actor && building.type === "planet" && countBuildings(next, actor, "star") < BUILD_LIMITS.star && canAfford(player, COSTS.star)) {
         pay(player, COSTS.star);
         building.type = "star";
-        addLog(next, "".concat(player.name, " \u304C\u60D1\u661F\u3092\u6052\u661F\u3078\u5F37\u5316\u3057\u307E\u3057\u305F\u3002"));
+        addLog(next, "".concat(player.name, " \u304C\u5C0F\u90FD\u5E02\u3092\u5927\u90FD\u5E02\u3078\u5F37\u5316\u3057\u307E\u3057\u305F\u3002"));
       }
     }
     refreshBonuses(next);
@@ -1030,7 +1030,7 @@ function reducer(state, event) {
         addLog(next, "初期配置完了。最初のプレイヤーからサイコロを振ります。");
       } else {
         next.action = "planet";
-        addLog(next, "".concat(next.players[next.setupOrder[next.setupStep]].name, " \u304C\u60D1\u661F\u3092\u914D\u7F6E\u3057\u307E\u3059\u3002"));
+        addLog(next, "".concat(next.players[next.setupOrder[next.setupStep]].name, " \u304C\u5C0F\u90FD\u5E02\u3092\u914D\u7F6E\u3057\u307E\u3059\u3002"));
       }
       return next;
     }
@@ -1043,7 +1043,7 @@ function reducer(state, event) {
       next.freeRoutesLeft = Math.max(0, (next.freeRoutesLeft || 1) - 1);
       if (next.freeRoutesLeft === 0) next.action = "build";
     }
-    addLog(next, "".concat(player.name, " \u304C\u661F\u9593\u822A\u8DEF\u3092\u5EFA\u8A2D\u3057\u307E\u3057\u305F\u3002"));
+    addLog(next, "".concat(player.name, " \u304C\u9818\u754C\u8DEF\u3092\u5EFA\u8A2D\u3057\u307E\u3057\u305F\u3002"));
     refreshBonuses(next);
     return next;
   }
@@ -1055,7 +1055,7 @@ function reducer(state, event) {
       type: card,
       boughtTurn: next.turnCount || 0
     });
-    addLog(next, "".concat(player.name, " \u304C\u65B0\u5929\u5730\u3092\u7372\u5F97\u3057\u307E\u3057\u305F\u3002"));
+    addLog(next, "".concat(player.name, " \u304C\u672A\u77E5\u3078\u306E\u65C5\u3092\u7372\u5F97\u3057\u307E\u3057\u305F\u3002"));
     return next;
   }
   if (event.type === "playDev") {
@@ -1076,12 +1076,12 @@ function reducer(state, event) {
     if (type === "tv") {
       player.playedTv += 1;
       startCriminalMove(next, actor);
-      addLog(next, "".concat(player.name, " \u304CTV\u3092\u8D77\u52D5\u3002\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u307E\u3059\u3002"));
+      addLog(next, "".concat(player.name, " \u304CTVA\u3092\u8D77\u52D5\u3002\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u79FB\u52D5\u3057\u307E\u3059\u3002"));
     }
     if (type === "route") {
       next.action = "freeRoute";
       next.freeRoutesLeft = 2;
-      addLog(next, "".concat(player.name, " \u304C\u822A\u8DEF\u6574\u5099\u3092\u5B9F\u884C\u3002\u7121\u6599\u30672\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002"));
+      addLog(next, "".concat(player.name, " \u304C\u9818\u754C\u8DEF\u958B\u901A\u3092\u5B9F\u884C\u3002\u7121\u6599\u30672\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002"));
     }
     if (type === "collect") {
       var key = event.resource || RESOURCE_KEYS[0];
@@ -1092,7 +1092,7 @@ function reducer(state, event) {
         other.resources[key] = 0;
       });
       player.resources[key] += total;
-      addLog(next, "".concat(player.name, " \u304C\u5FB4\u53CE\u3067").concat(RESOURCES[key].name).concat(total, "\u3092\u96C6\u3081\u307E\u3057\u305F\u3002"));
+      addLog(next, "".concat(player.name, " \u304C\u62BC\u53CE\u3067").concat(RESOURCES[key].name).concat(total, "\u3092\u96C6\u3081\u307E\u3057\u305F\u3002"));
     }
     if (type === "plenty") {
       addRes(player.resources, event.a || "rock", 1);
@@ -1214,7 +1214,7 @@ function reducer(state, event) {
   return next;
 }
 function tileName(tile) {
-  if (tile.terrain === "desert") return "中性子星";
+  if (tile.terrain === "desert") return "ヴォイド";
   return RESOURCES[tile.terrain].terrain;
 }
 function Cost(_ref17) {
@@ -1412,7 +1412,7 @@ function CriminalPanel(_ref22) {
   if (state.action !== "discard" && state.action !== "criminal" && state.action !== "steal") return null;
   return /*#__PURE__*/React.createElement("div", {
     className: "criminalPanel"
-  }, /*#__PURE__*/React.createElement("h2", null, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB"), state.action === "discard" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("h2", null, "\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA"), state.action === "discard" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
     className: "spaceportNote"
   }, "\u5EC3\u68C4\u5F85\u3061: ", pendingDiscardNames.join(" / ")), need > 0 ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ResourceBundleInput, {
     title: "\u6368\u3066\u308B\u8CC7\u6E90 ".concat(need, "\u679A"),
@@ -1480,13 +1480,13 @@ function HelpPanel() {
     onClick: function onClick() {
       return setTab("cards");
     }
-  }, "\u65B0\u5929\u5730")), tab === "rules" && /*#__PURE__*/React.createElement("div", {
+  }, "\u672A\u77E5\u3078\u306E\u65C5")), tab === "rules" && /*#__PURE__*/React.createElement("div", {
     className: "helpContent"
-  }, /*#__PURE__*/React.createElement("h2", null, "\u904A\u3073\u65B9"), /*#__PURE__*/React.createElement("p", null, "\u30B5\u30A4\u30B3\u30ED\u3067\u8CC7\u6E90\u3092\u5F97\u3066\u3001\u60D1\u661F\u3001\u6052\u661F\u3001\u661F\u9593\u822A\u8DEF\u3092\u5E83\u3052\u307E\u3059\u300210 VP\u306B\u5230\u9054\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u52DD\u5229\u3067\u3059\u3002"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "\u521D\u671F\u914D\u7F6E\u3067\u306F\u5404\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u60D1\u661F\u3068\u661F\u9593\u822A\u8DEF\u30922\u30BB\u30C3\u30C8\u7F6E\u304D\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u81EA\u5206\u306E\u756A\u306F\u30B5\u30A4\u30B3\u30ED\u3001\u8CC7\u6E90\u7372\u5F97\u3001\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u306E\u9806\u306B\u9032\u307F\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u3067\u306F\u4EA4\u63DB\u3001\u5EFA\u8A2D\u3001\u65B0\u5929\u5730\u3001\u4EA4\u6E09\u3092\u884C\u3048\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u51FA\u76EE\u3068\u540C\u3058\u6570\u5B57\u306E\u30BF\u30A4\u30EB\u306B\u96A3\u63A5\u3059\u308B\u60D1\u661F\u306F\u8CC7\u6E901\u3001\u6052\u661F\u306F\u8CC7\u6E902\u3092\u5F97\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "7\u304C\u51FA\u305F\u3089\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u3001\u305D\u306E\u30BF\u30A4\u30EB\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8\u306B\u63A5\u3059\u308B\u60D1\u661F\u304B\u6052\u661F\u304C\u3042\u308B\u3068\u30012:1\u307E\u305F\u306F3:1\u4EA4\u6613\u304C\u4F7F\u3048\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("h2", null, "\u52DD\u5229\u70B9"), /*#__PURE__*/React.createElement("p", null, "\u60D1\u661F\u306F1 VP\u3001\u6052\u661F\u306F2 VP\u3001\u52DD\u5229\u8A18\u9332\u306F1 VP\u3067\u3059\u3002\u6700\u9577\u822A\u8DEF\u3068\u6700\u5927TV\u306F\u305D\u308C\u305E\u308C2 VP\u3067\u3059\u3002")), tab === "terms" && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("h2", null, "\u904A\u3073\u65B9"), /*#__PURE__*/React.createElement("p", null, "\u30B5\u30A4\u30B3\u30ED\u3067\u8CC7\u6E90\u3092\u5F97\u3066\u3001\u5C0F\u90FD\u5E02\u3001\u5927\u90FD\u5E02\u3001\u9818\u754C\u8DEF\u3092\u5E83\u3052\u307E\u3059\u300210 VP\u306B\u5230\u9054\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u52DD\u5229\u3067\u3059\u3002"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "\u521D\u671F\u914D\u7F6E\u3067\u306F\u5404\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u5C0F\u90FD\u5E02\u3068\u9818\u754C\u8DEF\u30922\u30BB\u30C3\u30C8\u7F6E\u304D\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u81EA\u5206\u306E\u756A\u306F\u30B5\u30A4\u30B3\u30ED\u3001\u8CC7\u6E90\u7372\u5F97\u3001\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u306E\u9806\u306B\u9032\u307F\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u30E1\u30A4\u30F3\u30D5\u30A7\u30FC\u30BA\u3067\u306F\u4EA4\u63DB\u3001\u5EFA\u8A2D\u3001\u672A\u77E5\u3078\u306E\u65C5\u3001\u4EA4\u6E09\u3092\u884C\u3048\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "\u51FA\u76EE\u3068\u540C\u3058\u6570\u5B57\u306E\u30BF\u30A4\u30EB\u306B\u96A3\u63A5\u3059\u308B\u5C0F\u90FD\u5E02\u306F\u8CC7\u6E901\u3001\u5927\u90FD\u5E02\u306F\u8CC7\u6E902\u3092\u5F97\u307E\u3059\u3002"), /*#__PURE__*/React.createElement("li", null, "7\u304C\u51FA\u305F\u3089\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u79FB\u52D5\u3057\u3001\u305D\u306E\u30BF\u30A4\u30EB\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002"), /*#__PURE__*/React.createElement("li", null, "\u6B21\u5143\u9580\u306B\u63A5\u3059\u308B\u5C0F\u90FD\u5E02\u304B\u5927\u90FD\u5E02\u304C\u3042\u308B\u3068\u30012:1\u307E\u305F\u306F3:1\u4EA4\u6613\u304C\u4F7F\u3048\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("h2", null, "\u52DD\u5229\u70B9"), /*#__PURE__*/React.createElement("p", null, "\u5C0F\u90FD\u5E02\u306F1 VP\u3001\u5927\u90FD\u5E02\u306F2 VP\u3001\u52DD\u5229\u8A18\u9332\u306F1 VP\u3067\u3059\u3002\u6700\u9577\u9818\u754C\u8DEF\u3068\u6700\u5927TVA\u529B\u306F\u305D\u308C\u305E\u308C2 VP\u3067\u3059\u3002")), tab === "terms" && /*#__PURE__*/React.createElement("div", {
     className: "helpContent"
-  }, /*#__PURE__*/React.createElement("h2", null, "\u7528\u8A9E\u5BFE\u5FDC"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u60D1\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u958B\u62D3\u5730\u3002\u5EFA\u3066\u308B\u3068\u96A3\u63A5\u30BF\u30A4\u30EB\u304B\u3089\u8CC7\u6E90\u3092\u5F97\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u6052\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u90FD\u5E02\u3002\u60D1\u661F\u3092\u5F37\u5316\u3057\u3001\u7523\u51FA\u304C2\u500D\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u661F\u9593\u822A\u8DEF"), /*#__PURE__*/React.createElement("dd", null, "\u8857\u9053\u3002\u65B0\u3057\u3044\u60D1\u661F\u3092\u7F6E\u304F\u305F\u3081\u306E\u63A5\u7D9A\u8DEF\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8"), /*#__PURE__*/React.createElement("dd", null, "\u6E2F\u3002\u63A5\u3057\u3066\u3044\u308B\u3068\u901A\u4FE1\u4EA4\u6613\u304C\u6709\u5229\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u4E2D\u6027\u5B50\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u7802\u6F20\u3002\u8CC7\u6E90\u306F\u7523\u51FA\u3057\u307E\u305B\u3093\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB"), /*#__PURE__*/React.createElement("dd", null, "\u76D7\u8CCA\u3002\u3044\u308B\u30BF\u30A4\u30EB\u306E\u7523\u51FA\u3092\u6B62\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TV"), /*#__PURE__*/React.createElement("dd", null, "\u9A0E\u58EB\u3002\u4F7F\u3046\u3068\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u52D5\u304B\u3057\u307E\u3059\u3002"))), /*#__PURE__*/React.createElement("h2", null, "\u8CC7\u6E90"), /*#__PURE__*/React.createElement("p", null, "\u5CA9\u77F3\u60D1\u661F=\u5CA9\u77F3\u3001\u9271\u77F3\u60D1\u661F=\u30EC\u30A2\u30E1\u30BF\u30EB\u3001\u8CC7\u6750\u5DE5\u5834=\u8CC7\u6750\u3001\u30CA\u30CE\u30DE\u30B7\u30F3\u5DE5\u5834=\u30CA\u30CE\u30DE\u30B7\u30F3\u3001\u6C34\u8015\u683D\u57F9=\u98DF\u6599\u3002")), tab === "cards" && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("h2", null, "\u7528\u8A9E\u5BFE\u5FDC"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5C0F\u90FD\u5E02"), /*#__PURE__*/React.createElement("dd", null, "\u57FA\u790E\u62E0\u70B9\u3002\u5EFA\u3066\u308B\u3068\u96A3\u63A5\u30BF\u30A4\u30EB\u304B\u3089\u8CC7\u6E90\u3092\u5F97\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5927\u90FD\u5E02"), /*#__PURE__*/React.createElement("dd", null, "\u5C0F\u90FD\u5E02\u3092\u5F37\u5316\u3057\u305F\u62E0\u70B9\u3002\u7523\u51FA\u304C2\u500D\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u9818\u754C\u8DEF"), /*#__PURE__*/React.createElement("dd", null, "\u5C0F\u90FD\u5E02\u540C\u58EB\u3092\u3064\u306A\u304E\u3001\u65B0\u3057\u3044\u5C0F\u90FD\u5E02\u3092\u7F6E\u304F\u305F\u3081\u306E\u63A5\u7D9A\u8DEF\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u6B21\u5143\u9580"), /*#__PURE__*/React.createElement("dd", null, "\u63A5\u3057\u3066\u3044\u308B\u3068\u901A\u4FE1\u4EA4\u6613\u304C\u6709\u5229\u306B\u306A\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30F4\u30A9\u30A4\u30C9"), /*#__PURE__*/React.createElement("dd", null, "\u8CC7\u6E90\u3092\u7523\u51FA\u3057\u306A\u3044\u7279\u6B8A\u30BF\u30A4\u30EB\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA"), /*#__PURE__*/React.createElement("dd", null, "\u3044\u308B\u30BF\u30A4\u30EB\u306E\u7523\u51FA\u3092\u6B62\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TVA"), /*#__PURE__*/React.createElement("dd", null, "\u4F7F\u3046\u3068\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u52D5\u304B\u3057\u307E\u3059\u3002"))), /*#__PURE__*/React.createElement("h2", null, "\u8CC7\u6E90"), /*#__PURE__*/React.createElement("p", null, "\u9271\u7269\u6B21\u5143=\u30EC\u30A2\u30E1\u30BF\u30EB\u3001\u6A5F\u68B0\u6B21\u5143=\u30CA\u30CE\u30DE\u30B7\u30F3\u3001\u71B1\u5E2F\u6B21\u5143=\u5EFA\u6750\u3001\u5927\u8349\u539F=\u76AE\u9769\u3001\u80A5\u6C83\u306A\u5927\u5730=\u7A40\u7269\u3002")), tab === "cards" && /*#__PURE__*/React.createElement("div", {
     className: "helpContent"
-  }, /*#__PURE__*/React.createElement("h2", null, "\u65B0\u5929\u5730\u30AB\u30FC\u30C9"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TV"), /*#__PURE__*/React.createElement("dd", null, "\u30E6\u30CB\u30F4\u30A1\u30FC\u30B9 \u30AF\u30EA\u30DF\u30CA\u30EB\u3092\u79FB\u52D5\u3057\u307E\u3059\u30023\u679A\u4EE5\u4E0A\u3067\u6700\u5927TV\u306E\u5019\u88DC\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u822A\u8DEF\u6574\u5099"), /*#__PURE__*/React.createElement("dd", null, "\u7121\u6599\u3067\u661F\u9593\u822A\u8DEF\u30922\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u5FB4\u53CE"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u3092\u4ED6\u30D7\u30EC\u30A4\u30E4\u30FC\u5168\u54E1\u304B\u3089\u96C6\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u88DC\u7D66\u885B\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u30922\u3064\u53D7\u3051\u53D6\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u52DD\u5229\u8A18\u9332"), /*#__PURE__*/React.createElement("dd", null, "\u6301\u3063\u3066\u3044\u308B\u3060\u3051\u30671 VP\u3067\u3059\u3002")))));
+  }, /*#__PURE__*/React.createElement("h2", null, "\u672A\u77E5\u3078\u306E\u65C5\u30AB\u30FC\u30C9"), /*#__PURE__*/React.createElement("dl", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "TVA"), /*#__PURE__*/React.createElement("dd", null, "\u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA\u3092\u79FB\u52D5\u3057\u307E\u3059\u30023\u679A\u4EE5\u4E0A\u3067\u6700\u5927TVA\u529B\u306E\u5019\u88DC\u3067\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u9818\u754C\u8DEF\u958B\u901A"), /*#__PURE__*/React.createElement("dd", null, "\u7121\u6599\u3067\u9818\u754C\u8DEF\u30922\u672C\u307E\u3067\u5EFA\u8A2D\u3067\u304D\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u62BC\u53CE"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u3092\u4ED6\u30D7\u30EC\u30A4\u30E4\u30FC\u5168\u54E1\u304B\u3089\u96C6\u3081\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u88DC\u7D66\u885B\u661F"), /*#__PURE__*/React.createElement("dd", null, "\u9078\u3093\u3060\u8CC7\u6E90\u30922\u3064\u53D7\u3051\u53D6\u308A\u307E\u3059\u3002")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("dt", null, "\u52DD\u5229\u8A18\u9332"), /*#__PURE__*/React.createElement("dd", null, "\u6301\u3063\u3066\u3044\u308B\u3060\u3051\u30671 VP\u3067\u3059\u3002")))));
 }
 function usePeerRoom(state, setState, roomId, myPlayerId) {
   var _useState11 = useState({
@@ -1684,7 +1684,7 @@ function Board(_ref25) {
       x: tile.center.x,
       y: tile.center.y - 9,
       className: "tileName"
-    }, tile.terrain === "desert" ? "中性子星" : RESOURCES[tile.terrain].terrain), tile.number && /*#__PURE__*/React.createElement("g", null, /*#__PURE__*/React.createElement("circle", {
+    }, tile.terrain === "desert" ? "ヴォイド" : RESOURCES[tile.terrain].terrain), tile.number && /*#__PURE__*/React.createElement("g", null, /*#__PURE__*/React.createElement("circle", {
       cx: tile.center.x,
       cy: tile.center.y + 16,
       r: "17",
@@ -1698,7 +1698,7 @@ function Board(_ref25) {
       y: tile.center.y + 47,
       className: "criminal",
       filter: "url(#glow)"
-    }, "UC"));
+    }, "RV"));
   }), state.board.spaceports.map(function (spaceport) {
     var tint = spaceport.type ? RESOURCES[spaceport.type].color : "#4f9dbd";
     return /*#__PURE__*/React.createElement("g", {
@@ -1828,7 +1828,7 @@ function App() {
   var currentTradeRate = tradeRateFor(state, myPlayerId, trade.give);
   return /*#__PURE__*/React.createElement("main", null, /*#__PURE__*/React.createElement("section", {
     className: "topbar"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", null, "Star Settlers"), /*#__PURE__*/React.createElement("p", null, "\u60D1\u661F\u3092\u5E83\u3052\u3001\u6052\u661F\u3078\u80B2\u3066\u300110\u70B9\u3092\u76EE\u6307\u30594\u4EBA\u7528\u30AA\u30F3\u30E9\u30A4\u30F3\u5353\u3002")), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", null, "Beyonders"), /*#__PURE__*/React.createElement("p", null, "\u5C0F\u90FD\u5E02\u3092\u5E83\u3052\u3001\u5927\u90FD\u5E02\u3078\u80B2\u3066\u300110\u70B9\u3092\u76EE\u6307\u30594\u4EBA\u7528\u30AA\u30F3\u30E9\u30A4\u30F3\u5353\u3002")), /*#__PURE__*/React.createElement("div", {
     className: "net"
   }, /*#__PURE__*/React.createElement("span", null, net.status), /*#__PURE__*/React.createElement("button", {
     onClick: host,
@@ -1856,7 +1856,7 @@ function App() {
     className: "pill"
   }, "\u30D5\u30A7\u30FC\u30BA: ", phaseLabel(state)), /*#__PURE__*/React.createElement("span", {
     className: "pill"
-  }, "\u64CD\u4F5C: ", BUILD_LABEL[state.action] || (state.action === "criminal" ? "ユニヴァース クリミナル" : state.action === "discard" ? "資源廃棄" : state.action === "steal" ? "資源奪取" : state.action)), state.dice && /*#__PURE__*/React.createElement("span", {
+  }, "\u64CD\u4F5C: ", BUILD_LABEL[state.action] || (state.action === "criminal" ? "ラヴェジャーズ" : state.action === "discard" ? "資源廃棄" : state.action === "steal" ? "資源奪取" : state.action)), state.dice && /*#__PURE__*/React.createElement("span", {
     className: "pill"
   }, "\u51FA\u76EE: ", state.dice.join(" + "), " = ", state.dice[0] + state.dice[1])), /*#__PURE__*/React.createElement(Board, {
     state: state,
@@ -1917,7 +1917,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement(Rocket, {
     size: 17
-  }), " \u661F\u9593\u822A\u8DEF"), /*#__PURE__*/React.createElement("button", {
+  }), " \u9818\u754C\u8DEF"), /*#__PURE__*/React.createElement("button", {
     className: state.action === "planet" ? "selected" : "",
     onClick: function onClick() {
       return act({
@@ -1927,7 +1927,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement(Orbit, {
     size: 17
-  }), " \u60D1\u661F"), /*#__PURE__*/React.createElement("button", {
+  }), " \u5C0F\u90FD\u5E02"), /*#__PURE__*/React.createElement("button", {
     className: state.action === "star" ? "selected" : "",
     onClick: function onClick() {
       return act({
@@ -1937,7 +1937,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement(Satellite, {
     size: 17
-  }), " \u6052\u661F"), /*#__PURE__*/React.createElement("button", {
+  }), " \u5927\u90FD\u5E02"), /*#__PURE__*/React.createElement("button", {
     className: state.action === "criminal" ? "selected" : "",
     onClick: function onClick() {
       return act({
@@ -1947,15 +1947,15 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement(Swords, {
     size: 17
-  }), " \u30E6\u30CB\u30F4\u30A1\u30FC\u30B9")), /*#__PURE__*/React.createElement("div", {
+  }), " \u30E9\u30F4\u30A7\u30B8\u30E3\u30FC\u30BA")), /*#__PURE__*/React.createElement("div", {
     className: "costs"
-  }, /*#__PURE__*/React.createElement("h2", null, "\u5EFA\u8A2D\u30B3\u30B9\u30C8"), /*#__PURE__*/React.createElement("p", null, "\u661F\u9593\u822A\u8DEF ", /*#__PURE__*/React.createElement(Cost, {
+  }, /*#__PURE__*/React.createElement("h2", null, "\u5EFA\u8A2D\u30B3\u30B9\u30C8"), /*#__PURE__*/React.createElement("p", null, "\u9818\u754C\u8DEF ", /*#__PURE__*/React.createElement(Cost, {
     cost: COSTS.route
-  })), /*#__PURE__*/React.createElement("p", null, "\u60D1\u661F ", /*#__PURE__*/React.createElement(Cost, {
+  })), /*#__PURE__*/React.createElement("p", null, "\u5C0F\u90FD\u5E02 ", /*#__PURE__*/React.createElement(Cost, {
     cost: COSTS.planet
-  })), /*#__PURE__*/React.createElement("p", null, "\u6052\u661F ", /*#__PURE__*/React.createElement(Cost, {
+  })), /*#__PURE__*/React.createElement("p", null, "\u5927\u90FD\u5E02 ", /*#__PURE__*/React.createElement(Cost, {
     cost: COSTS.star
-  })), /*#__PURE__*/React.createElement("p", null, "\u65B0\u5929\u5730 ", /*#__PURE__*/React.createElement(Cost, {
+  })), /*#__PURE__*/React.createElement("p", null, "\u672A\u77E5\u3078\u306E\u65C5 ", /*#__PURE__*/React.createElement(Cost, {
     cost: COSTS.frontier
   })), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
@@ -1966,7 +1966,7 @@ function App() {
     disabled: !mainActionable
   }, /*#__PURE__*/React.createElement(Shuffle, {
     size: 17
-  }), " \u65B0\u5929\u5730\u3092\u7372\u5F97")), /*#__PURE__*/React.createElement("div", {
+  }), " \u672A\u77E5\u3078\u306E\u65C5\u3092\u7372\u5F97")), /*#__PURE__*/React.createElement("div", {
     className: "trade"
   }, /*#__PURE__*/React.createElement("h2", null, "\u901A\u4FE1\u4EA4\u6613 ", currentTradeRate, ":1"), /*#__PURE__*/React.createElement("select", {
     value: trade.give,
@@ -2001,7 +2001,7 @@ function App() {
     disabled: !mainActionable
   }, "\u4EA4\u63DB"), /*#__PURE__*/React.createElement("p", {
     className: "spaceportNote"
-  }, "\u30B9\u30DA\u30FC\u30B9\u30DD\u30FC\u30C8: ", spaceportText(state, myPlayerId))), /*#__PURE__*/React.createElement(CriminalPanel, {
+  }, "\u6B21\u5143\u9580: ", spaceportText(state, myPlayerId))), /*#__PURE__*/React.createElement(CriminalPanel, {
     state: state,
     myPlayerId: myPlayerId,
     onEvent: act
@@ -2011,7 +2011,7 @@ function App() {
     onEvent: act
   }), /*#__PURE__*/React.createElement("div", {
     className: "frontiers"
-  }, /*#__PURE__*/React.createElement("h2", null, "\u624B\u672D\u306E\u65B0\u5929\u5730"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("h2", null, "\u624B\u672D\u306E\u672A\u77E5\u3078\u306E\u65C5"), /*#__PURE__*/React.createElement("div", {
     className: "miniControls"
   }, /*#__PURE__*/React.createElement("select", {
     value: devChoice.resource,
@@ -2024,7 +2024,7 @@ function App() {
     return /*#__PURE__*/React.createElement("option", {
       key: key,
       value: key
-    }, "\u5FB4\u53CE: ", RESOURCES[key].name);
+    }, "\u62BC\u53CE: ", RESOURCES[key].name);
   })), /*#__PURE__*/React.createElement("select", {
     value: devChoice.a,
     onChange: function onChange(e) {
@@ -2075,9 +2075,9 @@ function App() {
       className: player.id === active.id ? "active" : ""
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("strong", null, player.name, player.bonus.longest && /*#__PURE__*/React.createElement("span", {
       className: "badge"
-    }, "\u6700\u9577\u661F\u9593\u822A\u8DEF"), player.bonus.largestTv && /*#__PURE__*/React.createElement("span", {
+    }, "\u6700\u9577\u9818\u754C\u8DEF"), player.bonus.largestTv && /*#__PURE__*/React.createElement("span", {
       className: "badge"
-    }, "\u6700\u5927TV\u529B")), /*#__PURE__*/React.createElement("span", null, getVp(state, player.id), " VP")), /*#__PURE__*/React.createElement("p", null, visibleResourceText(player, myPlayerId)), /*#__PURE__*/React.createElement("small", null, "TV ", player.playedTv, " / \u65B0\u5929\u5730 ", player.hiddenNewFrontiers.length, "\u679A / \u516C\u958B\u6E08\u307F: ", publicPlayedFrontiers(player), " / ", spaceportText(state, player.id)));
+    }, "\u6700\u5927TVA\u529B")), /*#__PURE__*/React.createElement("span", null, getVp(state, player.id), " VP")), /*#__PURE__*/React.createElement("p", null, visibleResourceText(player, myPlayerId)), /*#__PURE__*/React.createElement("small", null, "TVA ", player.playedTv, " / \u672A\u77E5\u3078\u306E\u65C5 ", player.hiddenNewFrontiers.length, "\u679A / \u516C\u958B\u6E08\u307F: ", publicPlayedFrontiers(player), " / ", spaceportText(state, player.id)));
   })), /*#__PURE__*/React.createElement("section", {
     className: "log"
   }, /*#__PURE__*/React.createElement("h2", null, "\u822A\u884C\u30ED\u30B0"), state.winner !== null && /*#__PURE__*/React.createElement("div", {

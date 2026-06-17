@@ -15,11 +15,11 @@ const Swords = () => <Icon label="!" />;
 const Undo2 = () => <Icon label="✓" />;
 
 const RESOURCES = {
-  rock: { name: "岩石", terrain: "岩石惑星", color: "#a3544a" },
-  rare: { name: "レアメタル", terrain: "鉱石惑星", color: "#64748b" },
-  material: { name: "資材", terrain: "資材工場", color: "#2f855a" },
-  nano: { name: "ナノマシン", terrain: "ナノマシン工場", color: "#7c9a3e" },
-  food: { name: "食料", terrain: "水耕栽培", color: "#d5a11e" },
+  rock: { name: "レアメタル", terrain: "鉱物次元", color: "#a3544a" },
+  rare: { name: "ナノマシン", terrain: "機械次元", color: "#64748b" },
+  material: { name: "建材", terrain: "熱帯次元", color: "#2f855a" },
+  nano: { name: "皮革", terrain: "大草原", color: "#7c9a3e" },
+  food: { name: "穀物", terrain: "肥沃な大地", color: "#d5a11e" },
 };
 
 const RESOURCE_KEYS = Object.keys(RESOURCES);
@@ -52,9 +52,9 @@ const DEV_DECK = [
 ];
 
 const DEV_NAMES = {
-  tv: "TV",
-  route: "航路整備",
-  collect: "徴収",
+  tv: "TVA",
+  route: "領界路開通",
+  collect: "押収",
   plenty: "補給衛星",
   point: "勝利記録",
 };
@@ -81,10 +81,10 @@ const HEX_SIDE_INDEX = {
 };
 
 const BUILD_LABEL = {
-  route: "星間航路",
-  planet: "惑星",
-  star: "恒星",
-  frontier: "新天地",
+  route: "領界路",
+  planet: "小都市",
+  star: "大都市",
+  frontier: "未知への旅",
 };
 
 const TILE_SETUP = [
@@ -397,7 +397,7 @@ function createGame(roomId = crypto.randomUUID().slice(0, 8)) {
     pendingSteal: null,
     criminalMover: null,
     privateMessages: [],
-    log: ["宇宙航路の準備が整いました。惑星と星間航路を初期配置してください。"],
+    log: ["領界の準備が整いました。小都市と領界路を初期配置してください。"],
     winner: null,
   };
 }
@@ -458,7 +458,7 @@ function tradeRateFor(state, playerId, give) {
 
 function spaceportText(state, playerId) {
   const ports = playerSpaceports(state, playerId);
-  if (!ports.length) return "スペースポートなし";
+  if (!ports.length) return "次元門なし";
   return ports.map((port) => spaceportName(port.type)).join(" / ");
 }
 
@@ -520,7 +520,7 @@ function startCriminalMove(state, actor) {
 function finishCriminalMove(state, actor, tileId) {
   if (tileId === state.criminalTile) return false;
   state.criminalTile = tileId;
-  addLog(state, `ユニヴァース クリミナルが${tileName(state.board.tiles[tileId])}へ移動しました。`);
+  addLog(state, `ラヴェジャーズが${tileName(state.board.tiles[tileId])}へ移動しました。`);
   const victims = adjacentStealVictims(state, tileId, actor);
   if (victims.length) {
     state.pendingSteal = { thief: actor, victims };
@@ -661,7 +661,7 @@ function produce(state, total) {
       state.action = "discard";
       addLog(state, "7が出ました。資源8枚以上のプレイヤーは半分を捨てます。");
     } else {
-      addLog(state, "7が出ました。ユニヴァース クリミナルを任意のタイルへ移動できます。");
+      addLog(state, "7が出ました。ラヴェジャーズを任意のタイルへ移動できます。");
       startCriminalMove(state, state.turn);
     }
     return;
@@ -733,7 +733,7 @@ function reducer(state, event) {
     addLog(next, `${player.name} が資源${need}枚を捨てました。`);
     if (!pendingDiscardEntries(next).length) {
       next.pendingDiscards = {};
-      addLog(next, "全員の廃棄が完了しました。ユニヴァース クリミナルを移動してください。");
+      addLog(next, "全員の廃棄が完了しました。ラヴェジャーズを移動してください。");
       startCriminalMove(next, next.turn);
     } else {
       next.turnStage = "production";
@@ -776,20 +776,20 @@ function reducer(state, event) {
       next.buildings[vertexId] = { player: actor, type: "planet" };
       next.setupPendingVertex = vertexId;
       next.action = "route";
-      addLog(next, `${player.name} が惑星を配置しました。星間航路を接続してください。`);
+      addLog(next, `${player.name} が小都市を配置しました。領界路を接続してください。`);
       return next;
     }
     if (actor !== next.turn || !isMainPhase(next)) return next;
     if (next.action === "planet" && canBuildPlanet(next, vertexId, actor)) {
       pay(player, COSTS.planet);
       next.buildings[vertexId] = { player: actor, type: "planet" };
-      addLog(next, `${player.name} が惑星を建設しました。`);
+      addLog(next, `${player.name} が小都市を建設しました。`);
     } else if (next.action === "star") {
       const building = next.buildings[vertexId];
       if (building?.player === actor && building.type === "planet" && countBuildings(next, actor, "star") < BUILD_LIMITS.star && canAfford(player, COSTS.star)) {
         pay(player, COSTS.star);
         building.type = "star";
-        addLog(next, `${player.name} が惑星を恒星へ強化しました。`);
+        addLog(next, `${player.name} が小都市を大都市へ強化しました。`);
       }
     }
     refreshBonuses(next);
@@ -818,7 +818,7 @@ function reducer(state, event) {
         addLog(next, "初期配置完了。最初のプレイヤーからサイコロを振ります。");
       } else {
         next.action = "planet";
-        addLog(next, `${next.players[next.setupOrder[next.setupStep]].name} が惑星を配置します。`);
+        addLog(next, `${next.players[next.setupOrder[next.setupStep]].name} が小都市を配置します。`);
       }
       return next;
     }
@@ -829,7 +829,7 @@ function reducer(state, event) {
       next.freeRoutesLeft = Math.max(0, (next.freeRoutesLeft || 1) - 1);
       if (next.freeRoutesLeft === 0) next.action = "build";
     }
-    addLog(next, `${player.name} が星間航路を建設しました。`);
+    addLog(next, `${player.name} が領界路を建設しました。`);
     refreshBonuses(next);
     return next;
   }
@@ -838,7 +838,7 @@ function reducer(state, event) {
     pay(player, COSTS.frontier);
     const card = next.deck.pop();
     player.hiddenNewFrontiers.push({ type: card, boughtTurn: next.turnCount || 0 });
-    addLog(next, `${player.name} が新天地を獲得しました。`);
+    addLog(next, `${player.name} が未知への旅を獲得しました。`);
     return next;
   }
   if (event.type === "playDev") {
@@ -857,12 +857,12 @@ function reducer(state, event) {
     if (type === "tv") {
       player.playedTv += 1;
       startCriminalMove(next, actor);
-      addLog(next, `${player.name} がTVを起動。ユニヴァース クリミナルを移動します。`);
+      addLog(next, `${player.name} がTVAを起動。ラヴェジャーズを移動します。`);
     }
     if (type === "route") {
       next.action = "freeRoute";
       next.freeRoutesLeft = 2;
-      addLog(next, `${player.name} が航路整備を実行。無料で2本まで建設できます。`);
+      addLog(next, `${player.name} が領界路開通を実行。無料で2本まで建設できます。`);
     }
     if (type === "collect") {
       const key = event.resource || RESOURCE_KEYS[0];
@@ -873,7 +873,7 @@ function reducer(state, event) {
         other.resources[key] = 0;
       });
       player.resources[key] += total;
-      addLog(next, `${player.name} が徴収で${RESOURCES[key].name}${total}を集めました。`);
+      addLog(next, `${player.name} が押収で${RESOURCES[key].name}${total}を集めました。`);
     }
     if (type === "plenty") {
       addRes(player.resources, event.a || "rock", 1);
@@ -993,7 +993,7 @@ function reducer(state, event) {
 }
 
 function tileName(tile) {
-  if (tile.terrain === "desert") return "中性子星";
+  if (tile.terrain === "desert") return "ヴォイド";
   return RESOURCES[tile.terrain].terrain;
 }
 
@@ -1165,7 +1165,7 @@ function CriminalPanel({ state, myPlayerId, onEvent }) {
 
   return (
     <div className="criminalPanel">
-      <h2>ユニヴァース クリミナル</h2>
+      <h2>ラヴェジャーズ</h2>
       {state.action === "discard" && (
         <>
           <p className="spaceportNote">廃棄待ち: {pendingDiscardNames.join(" / ")}</p>
@@ -1223,24 +1223,24 @@ function HelpPanel() {
           用語
         </button>
         <button className={tab === "cards" ? "selected" : ""} onClick={() => setTab("cards")}>
-          新天地
+          未知への旅
         </button>
       </div>
 
       {tab === "rules" && (
         <div className="helpContent">
           <h2>遊び方</h2>
-          <p>サイコロで資源を得て、惑星、恒星、星間航路を広げます。10 VPに到達したプレイヤーが勝利です。</p>
+          <p>サイコロで資源を得て、小都市、大都市、領界路を広げます。10 VPに到達したプレイヤーが勝利です。</p>
           <ul>
-            <li>初期配置では各プレイヤーが惑星と星間航路を2セット置きます。</li>
+            <li>初期配置では各プレイヤーが小都市と領界路を2セット置きます。</li>
             <li>自分の番はサイコロ、資源獲得、メインフェーズの順に進みます。</li>
-            <li>メインフェーズでは交換、建設、新天地、交渉を行えます。</li>
-            <li>出目と同じ数字のタイルに隣接する惑星は資源1、恒星は資源2を得ます。</li>
-            <li>7が出たらユニヴァース クリミナルを移動し、そのタイルは産出しません。</li>
-            <li>スペースポートに接する惑星か恒星があると、2:1または3:1交易が使えます。</li>
+            <li>メインフェーズでは交換、建設、未知への旅、交渉を行えます。</li>
+            <li>出目と同じ数字のタイルに隣接する小都市は資源1、大都市は資源2を得ます。</li>
+            <li>7が出たらラヴェジャーズを移動し、そのタイルは産出しません。</li>
+            <li>次元門に接する小都市か大都市があると、2:1または3:1交易が使えます。</li>
           </ul>
           <h2>勝利点</h2>
-          <p>惑星は1 VP、恒星は2 VP、勝利記録は1 VPです。最長航路と最大TVはそれぞれ2 VPです。</p>
+          <p>小都市は1 VP、大都市は2 VP、勝利記録は1 VPです。最長領界路と最大TVA力はそれぞれ2 VPです。</p>
         </div>
       )}
 
@@ -1248,26 +1248,26 @@ function HelpPanel() {
         <div className="helpContent">
           <h2>用語対応</h2>
           <dl>
-            <div><dt>惑星</dt><dd>開拓地。建てると隣接タイルから資源を得ます。</dd></div>
-            <div><dt>恒星</dt><dd>都市。惑星を強化し、産出が2倍になります。</dd></div>
-            <div><dt>星間航路</dt><dd>街道。新しい惑星を置くための接続路です。</dd></div>
-            <div><dt>スペースポート</dt><dd>港。接していると通信交易が有利になります。</dd></div>
-            <div><dt>中性子星</dt><dd>砂漠。資源は産出しません。</dd></div>
-            <div><dt>ユニヴァース クリミナル</dt><dd>盗賊。いるタイルの産出を止めます。</dd></div>
-            <div><dt>TV</dt><dd>騎士。使うとユニヴァース クリミナルを動かします。</dd></div>
+            <div><dt>小都市</dt><dd>基礎拠点。建てると隣接タイルから資源を得ます。</dd></div>
+            <div><dt>大都市</dt><dd>小都市を強化した拠点。産出が2倍になります。</dd></div>
+            <div><dt>領界路</dt><dd>小都市同士をつなぎ、新しい小都市を置くための接続路です。</dd></div>
+            <div><dt>次元門</dt><dd>接していると通信交易が有利になります。</dd></div>
+            <div><dt>ヴォイド</dt><dd>資源を産出しない特殊タイルです。</dd></div>
+            <div><dt>ラヴェジャーズ</dt><dd>いるタイルの産出を止めます。</dd></div>
+            <div><dt>TVA</dt><dd>使うとラヴェジャーズを動かします。</dd></div>
           </dl>
           <h2>資源</h2>
-          <p>岩石惑星=岩石、鉱石惑星=レアメタル、資材工場=資材、ナノマシン工場=ナノマシン、水耕栽培=食料。</p>
+          <p>鉱物次元=レアメタル、機械次元=ナノマシン、熱帯次元=建材、大草原=皮革、肥沃な大地=穀物。</p>
         </div>
       )}
 
       {tab === "cards" && (
         <div className="helpContent">
-          <h2>新天地カード</h2>
+          <h2>未知への旅カード</h2>
           <dl>
-            <div><dt>TV</dt><dd>ユニヴァース クリミナルを移動します。3枚以上で最大TVの候補です。</dd></div>
-            <div><dt>航路整備</dt><dd>無料で星間航路を2本まで建設できます。</dd></div>
-            <div><dt>徴収</dt><dd>選んだ資源を他プレイヤー全員から集めます。</dd></div>
+            <div><dt>TVA</dt><dd>ラヴェジャーズを移動します。3枚以上で最大TVA力の候補です。</dd></div>
+            <div><dt>領界路開通</dt><dd>無料で領界路を2本まで建設できます。</dd></div>
+            <div><dt>押収</dt><dd>選んだ資源を他プレイヤー全員から集めます。</dd></div>
             <div><dt>補給衛星</dt><dd>選んだ資源を2つ受け取ります。</dd></div>
             <div><dt>勝利記録</dt><dd>持っているだけで1 VPです。</dd></div>
           </dl>
@@ -1390,7 +1390,7 @@ function Board({ state, onEvent, myPlayerId }) {
           <g key={tile.id} onClick={() => onEvent({ type: "selectTile", tileId: tile.id })}>
             <polygon className="hex" points={points} fill={fill} opacity={state.criminalTile === tile.id ? 0.5 : 0.88} />
             <text x={tile.center.x} y={tile.center.y - 9} className="tileName">
-              {tile.terrain === "desert" ? "中性子星" : RESOURCES[tile.terrain].terrain}
+              {tile.terrain === "desert" ? "ヴォイド" : RESOURCES[tile.terrain].terrain}
             </text>
             {tile.number && (
               <g>
@@ -1402,7 +1402,7 @@ function Board({ state, onEvent, myPlayerId }) {
             )}
             {state.criminalTile === tile.id && (
               <text x={tile.center.x} y={tile.center.y + 47} className="criminal" filter="url(#glow)">
-                UC
+                RV
               </text>
             )}
           </g>
@@ -1478,8 +1478,8 @@ function App() {
     <main>
       <section className="topbar">
         <div>
-          <h1>Star Settlers</h1>
-          <p>惑星を広げ、恒星へ育て、10点を目指す4人用オンライン卓。</p>
+          <h1>Beyonders</h1>
+          <p>小都市を広げ、大都市へ育て、10点を目指す4人用オンライン卓。</p>
         </div>
         <div className="net">
           <span>{net.status}</span>
@@ -1501,7 +1501,7 @@ function App() {
           <div className="statusLine">
             <span className="pill">現在: {active.name}</span>
             <span className="pill">フェーズ: {phaseLabel(state)}</span>
-            <span className="pill">操作: {BUILD_LABEL[state.action] || (state.action === "criminal" ? "ユニヴァース クリミナル" : state.action === "discard" ? "資源廃棄" : state.action === "steal" ? "資源奪取" : state.action)}</span>
+            <span className="pill">操作: {BUILD_LABEL[state.action] || (state.action === "criminal" ? "ラヴェジャーズ" : state.action === "discard" ? "資源廃棄" : state.action === "steal" ? "資源奪取" : state.action)}</span>
             {state.dice && <span className="pill">出目: {state.dice.join(" + ")} = {state.dice[0] + state.dice[1]}</span>}
           </div>
           <Board state={state} onEvent={act} myPlayerId={myPlayerId} />
@@ -1533,27 +1533,27 @@ function App() {
 
           <div className="tools">
             <button className={state.action === "route" ? "selected" : ""} onClick={() => act({ type: "setAction", action: "route" })}>
-              <Rocket size={17} /> 星間航路
+              <Rocket size={17} /> 領界路
             </button>
             <button className={state.action === "planet" ? "selected" : ""} onClick={() => act({ type: "setAction", action: "planet" })}>
-              <Orbit size={17} /> 惑星
+              <Orbit size={17} /> 小都市
             </button>
             <button className={state.action === "star" ? "selected" : ""} onClick={() => act({ type: "setAction", action: "star" })}>
-              <Satellite size={17} /> 恒星
+              <Satellite size={17} /> 大都市
             </button>
             <button className={state.action === "criminal" ? "selected" : ""} onClick={() => act({ type: "setAction", action: "criminal" })}>
-              <Swords size={17} /> ユニヴァース
+              <Swords size={17} /> ラヴェジャーズ
             </button>
           </div>
 
           <div className="costs">
             <h2>建設コスト</h2>
-            <p>星間航路 <Cost cost={COSTS.route} /></p>
-            <p>惑星 <Cost cost={COSTS.planet} /></p>
-            <p>恒星 <Cost cost={COSTS.star} /></p>
-            <p>新天地 <Cost cost={COSTS.frontier} /></p>
+            <p>領界路 <Cost cost={COSTS.route} /></p>
+            <p>小都市 <Cost cost={COSTS.planet} /></p>
+            <p>大都市 <Cost cost={COSTS.star} /></p>
+            <p>未知への旅 <Cost cost={COSTS.frontier} /></p>
             <button onClick={() => act({ type: "buyDev" })} disabled={!mainActionable}>
-              <Shuffle size={17} /> 新天地を獲得
+              <Shuffle size={17} /> 未知への旅を獲得
             </button>
           </div>
 
@@ -1567,7 +1567,7 @@ function App() {
               {RESOURCE_KEYS.map((key) => <option key={key} value={key}>{RESOURCES[key].name}</option>)}
             </select>
             <button onClick={() => act({ type: "bankTrade", ...trade })} disabled={!mainActionable}>交換</button>
-            <p className="spaceportNote">スペースポート: {spaceportText(state, myPlayerId)}</p>
+            <p className="spaceportNote">次元門: {spaceportText(state, myPlayerId)}</p>
           </div>
 
           <CriminalPanel state={state} myPlayerId={myPlayerId} onEvent={act} />
@@ -1575,10 +1575,10 @@ function App() {
           <NegotiationPanel state={state} myPlayerId={myPlayerId} onEvent={act} />
 
           <div className="frontiers">
-            <h2>手札の新天地</h2>
+            <h2>手札の未知への旅</h2>
             <div className="miniControls">
               <select value={devChoice.resource} onChange={(e) => setDevChoice({ ...devChoice, resource: e.target.value })}>
-                {RESOURCE_KEYS.map((key) => <option key={key} value={key}>徴収: {RESOURCES[key].name}</option>)}
+                {RESOURCE_KEYS.map((key) => <option key={key} value={key}>押収: {RESOURCES[key].name}</option>)}
               </select>
               <select value={devChoice.a} onChange={(e) => setDevChoice({ ...devChoice, a: e.target.value })}>
                 {RESOURCE_KEYS.map((key) => <option key={key} value={key}>補給1: {RESOURCES[key].name}</option>)}
@@ -1611,13 +1611,13 @@ function App() {
             <div>
               <strong>
                 {player.name}
-                {player.bonus.longest && <span className="badge">最長星間航路</span>}
-                {player.bonus.largestTv && <span className="badge">最大TV力</span>}
+                {player.bonus.longest && <span className="badge">最長領界路</span>}
+                {player.bonus.largestTv && <span className="badge">最大TVA力</span>}
               </strong>
               <span>{getVp(state, player.id)} VP</span>
             </div>
             <p>{visibleResourceText(player, myPlayerId)}</p>
-            <small>TV {player.playedTv} / 新天地 {player.hiddenNewFrontiers.length}枚 / 公開済み: {publicPlayedFrontiers(player)} / {spaceportText(state, player.id)}</small>
+            <small>TVA {player.playedTv} / 未知への旅 {player.hiddenNewFrontiers.length}枚 / 公開済み: {publicPlayedFrontiers(player)} / {spaceportText(state, player.id)}</small>
           </article>
         ))}
       </section>
